@@ -41,6 +41,9 @@ try {
 // ─── Middleware ──────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Redirect root → login page
+app.get('/', (req, res) => res.redirect('/login.html'));
+
 // Prevent direct access to Database folder
 app.use('/Database', (req, res) => {
   res.status(403).send('Forbidden: Database access not allowed.');
