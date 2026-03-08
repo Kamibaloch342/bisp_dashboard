@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DFLT Dashboard - Login</title>
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="stylesheet" href="/assets/css/ICstyle.css" />
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      background: #f8fafc; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh; 
+      margin: 0; 
+    }
+    .login-container {
+      background: white;
+      padding: 2.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 420px;
+    }
+    h2 { text-align: center; color: #1e293b; margin-bottom: 1.5rem; }
+    .form-group { margin-bottom: 1.25rem; }
+    label { display: block; margin-bottom: 0.5rem; color: #475569; font-weight: 500; }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    button {
+      width: 100%;
+      padding: 0.9rem;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #4338ca; }
+    #error { color: #ef4444; text-align: center; margin-top: 1rem; min-height: 1.2rem; }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>DFLT Phase 2 Dashboard</h2>
+    
+    <div class="form-group">
+      <label for="username">Username / Email</label>
+      <input type="text" id="username" placeholder="e.g. drfareeha or anam@sdpi.org" required />
+    </div>
+    
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter your password" required />
+    </div>
+
+    <button onclick="handleLogin()">Sign In</button>
+    
+    <div id="error"></div>
+  </div>
+
+  <script>
+    async function handleLogin() {
+      const errorEl = document.getElementById('error');
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      errorEl.textContent = '';
+
+      if (!username || !password) {
+        errorEl.textContent = 'Please enter username and password';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+          credentials: 'include'
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          // Save role/decks in sessionStorage for frontend use
+          sessionStorage.setItem('userRole', data.role);
+          sessionStorage.setItem('allowedDecks', data.allowed_decks);
+          sessionStorage.setItem('isVerified', 'true');
+          sessionStorage.setItem('username', username);
+          
+          // Redirect to main deck or index
+          window.location.href = '../decks/index.html'; 
+        } else {
+          errorEl.textContent = data.error || 'Login failed';
+        }
+      } catch (err) {
+        errorEl.textContent = 'Network error - please try again';
+        console.error(err);
+      }
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('password').addEventListener('keypress', e => {
+      if (e.key === 'Enter') handleLogin();
+    });
+  </script>
+</body>
+</html>

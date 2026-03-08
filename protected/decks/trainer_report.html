@@ -1,0 +1,1112 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainer Timeline – Trainer Tracker</title>
+    <!-- Replace the three script lines in <head> with this -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+        <script type="module">
+            import * as docxModule from 'https://cdn.jsdelivr.net/npm/docx@9.5.3/+esm';
+            window.docx = docxModule;  // Make it globally available like your code expects
+        </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --brand-color: #4f46e5;       /* indigo from your deck */
+            --accent: #4f46e5;
+            --rush-color: #fee2e2;
+            --good-color: #ecfdf5;
+            --font-eng: 'Montserrat', sans-serif;
+            --font-urdu: 'Noto Nastaliq Urdu', serif;
+        }
+
+        * { box-sizing: border-box; margin:0; padding:0; }
+        body {
+            font-family: var(--font-eng);
+            background: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* ── Login ──────────────────────────────────────── */
+        #login-container {
+            position: fixed;
+            inset: 0;
+            background: rgba(30,41,59,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(4px);
+        }
+
+        .login-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+
+        .login-card h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.8rem;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        .login-field {
+            margin-bottom: 1.4rem;
+        }
+
+        .login-field label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .login-field input {
+            width: 100%;
+            padding: 0.9rem 1.1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .login-field input:focus {
+            outline: none;
+            border-color: var(--brand-color);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+        }
+
+        #login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--brand-color);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #login-btn:hover { background: #4338ca; }
+
+        #login-error {
+            color: #ef4444;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.95rem;
+        }
+
+        /* ── Sidebar (decks navigation) ────────────────── */
+        #left-sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            width: 76px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            box-shadow: 2px 0 15px rgba(0,0,0,0.04);
+            transition: width 0.35s ease;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        #left-sidebar .sidebar-content {
+            opacity: 0;
+            transition: opacity 0.25s ease 0.08s;
+            padding: 1.5rem 1.25rem;
+        }
+
+        #left-sidebar:hover { width: 280px; }
+        #left-sidebar:hover .sidebar-content { opacity: 1; }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-bottom: 1.25rem;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header img {
+            height: 42px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--brand-color);
+        }
+
+        .nav-list {
+            list-style: none;
+        }
+
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            padding: 0.95rem 1.1rem;
+            border-radius: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .nav-item a:hover,
+        .nav-item a.active {
+            background: rgba(79,70,229,0.08);
+            color: var(--brand-color);
+        }
+
+        /* Mobile sidebar toggle */
+        #mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 150;
+            background: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+
+        #sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 90;
+            display: none;
+        }
+
+        #sidebar-overlay.active { display: block; }
+                /* Filter improvements */
+        #top-filters {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 80;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        #filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+            max-width: 1800px;
+            margin: 0 auto;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.45rem;
+        }
+
+        .filter-select, .search-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.85rem;
+            font-size: 0.95rem;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .filter-select:focus,
+        .search-input:focus {
+            outline: none;
+            border-color: var(--brand-color);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+        }
+
+        /* Live suggestions dropdown */
+        .suggestions-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            max-height: 260px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            display: none;
+            margin-top: 4px;
+        }
+
+        .suggestions-dropdown div {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .suggestions-dropdown div:hover,
+        .suggestions-dropdown div.active {
+            background: rgba(79,70,229,0.08);
+            color: var(--brand-color);
+        }
+
+        /* Mobile */
+        @media (max-width: 1023px) {
+            #filter-row {
+                flex-direction: column;
+            }
+            .filter-group {
+                min-width: 100%;
+            }
+        }
+
+        /* ── Main Content ───────────────────────────────── */
+        #page-container {
+            margin-left: 76px;
+            transition: margin-left 0.35s ease;
+            min-height: 100vh;
+            padding: 1.5rem 2rem;
+        }
+
+        #app-container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 1.5rem;
+            border: 1px solid var(--border-color);
+            padding: 1.75rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+        }
+
+        h1 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .header-flex {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .header-flex { flex-direction: row; justify-content: space-between; align-items: center; }
+        }
+
+        /* Timeline styles (adapted) */
+        .timeline-container {
+            position: relative;
+            padding: 1rem 0;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 1.5rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 3.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: 1.1rem;
+            top: 1.4rem;
+            width: 16px;
+            height: 16px;
+            border: 3px solid var(--brand-color);
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 0 0 4px var(--bg-color);
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .report-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+        }
+
+        .report-header {
+            padding: 1rem 1.5rem;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .report-date {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .report-body {
+            padding: 1.5rem;
+            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+
+        .urdu-text {
+            font-family: var(--font-urdu);
+            direction: rtl;
+            text-align: right;
+            font-size: 1.15rem;
+            line-height: 2.1;
+        }
+
+        .badge {
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-present { background: var(--good-color); color: #10b981; }
+        .badge-issue   { background: var(--rush-color);  color: #ef4444; }
+
+        .profile-card {
+            margin-bottom: 2.5rem;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.75rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .meta-item label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            display: block;
+        }
+
+        .meta-item span {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 8rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i { font-size: 5rem; opacity: 0.4; margin-bottom: 1.5rem; }
+         @keyframes spin {
+         to { transform: rotate(360deg); }
+        }
+        /* Mobile adjustments */
+        @media (max-width: 1023px) {
+            #left-sidebar { transform: translateX(-100%); width: 280px !important; }
+            #left-sidebar.mobile-open { transform: translateX(0); }
+            #mobile-menu-btn { display: block; }
+            #page-container { margin-left: 0; }
+            #top-filters { padding: 1rem; }
+            #filter-row { flex-direction: column; }
+            .filter-select { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-container">
+    <div class="login-card">
+        <h2>Trainer Tracker</h2>
+        <div class="login-field">
+            <label>Username</label>
+            <input type="text" id="username" autocomplete="off">
+        </div>
+        <div class="login-field">
+            <label>Password</label>
+            <input type="password" id="password">
+        </div>
+        <button id="login-btn">Sign In</button>
+        <div id="login-error"></div>
+    </div>
+</div>
+
+<!-- Mobile Menu Button -->
+<button id="mobile-menu-btn">
+    <i class="fa-solid fa-bars" style="font-size:1.5rem; color:#4f46e5;"></i>
+</button>
+
+<!-- Sidebar Overlay (mobile) -->
+<div id="sidebar-overlay"></div>
+
+<!-- Left Sidebar – Decks Navigation -->
+<aside id="left-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-header">
+            <img src="https://www.sdpi.org/assets/images/sdpi-logo-2020.webp" alt="SDPI">
+            <h2>DFLT Decks</h2>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item">
+            <a href="../index.html">DFLT Status Deck</a>
+            </li>
+            <li class="nav-item limited-access">
+                <a href="../decks/Benefeciary_status_deck.html">Beneficiary Status</a>
+            </li>
+            <li class="nav-item limited-access">
+                <a href="../decks/DFLT_2_Soft_launch_Map.html">DFLT Mapping</a>
+            </li>
+            <li class="nav-item limited-access">
+                <a href="../decks/Trainings_Locations_Viewers.html">DFLT Session</a>
+            </li>
+            <li class="nav-item limited-access">
+                <a href="../decks/trainers_deck.html">Trainers Progress</a>
+            </li>
+            <li class="nav-item full-access">
+                <a href="../decks/ic_data_deck.html">IC Monitoring Deck</a>
+            </li>
+            <li class="nav-item full-access">
+                <a href="../decks/GRM Table.html">GRM Analytics Table</a>
+            </li>
+            <li class="nav-item full-access">
+                <a href="../decks/duration_deck.html" >Duration Analysis</a>
+            </li>
+            <li class="nav-item full-access ">
+                <a href="../decks/trainer_report.html" class="active" >Trainer Report Deck</a>
+            </li>
+            <li class="nav-item full-access">
+                <a href="../decks/DFLT-Target Deck.html">Target Achievement</a>
+            </li>
+            <li class="nav-item full-access">
+                <a href="../decks/DFLT_Visuals_Deck.html">DFLT Visuals Deck</a>
+            </li>
+            <li class="nav-item full-access">
+                <a href="../decks/DFLT Pre-Post.html">DFLT Pre Post</a>
+            </li>
+        </ul>
+    </div>
+</aside>
+
+<!-- Main Page -->
+<main id="page-container">
+
+    <div id="app-container" style="display:none;">
+
+                    <!-- Top Filters -->
+                    <div id="top-filters">
+                <div id="filter-row">
+                    <!-- 1. Quick Search with Live Suggestions -->
+                    <div class="filter-group search-group">
+                        <label>Search Trainer</label>
+                        <input type="text" id="searchBox" class="filter-select search-input" 
+                            placeholder="Type trainer name..." autocomplete="off">
+                        <div id="trainer-suggestions" class="suggestions-dropdown"></div>
+                    </div>
+
+                    <!-- 2. Province -->
+                    <div class="filter-group">
+                        <label>Province</label>
+                        <select id="provinceSelect" class="filter-select">
+                            <option value="All">All Provinces</option>
+                        </select>
+                    </div>
+
+                    <!-- 3. District -->
+                    <div class="filter-group">
+                        <label>District</label>
+                        <select id="districtSelect" class="filter-select" disabled>
+                            <option value="All">All Districts</option>
+                        </select>
+                    </div>
+
+                    <!-- 4. Trainer Dropdown -->
+                    <div class="filter-group">
+                        <label>Select Trainer</label>
+                        <select id="trainerSelect" class="filter-select" disabled>
+                            <option value="" disabled selected>Select Trainer</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        <!-- Content Area -->
+        <div class="card">
+            <div class="header-flex">
+                <div>
+                    <h1>Trainer Timeline</h1>
+                    <div style="color:var(--text-secondary); font-weight:500;">
+                        Performance & notes history
+                    </div>
+                </div>
+            </div>
+<!-- Dashboard content will be rendered here -->
+            <div id="dashboard-content">
+                <div class="empty-state">
+                    <i class="fa-regular fa-user-circle"></i>
+                    <h2>Select a Trainer</h2>
+                    <p>Use the filters above to choose a trainer and view their timeline.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" style="display:none; position:fixed; inset:0; background:rgba(240,244,248,0.9); z-index:1200; flex-direction:column; justify-content:center; align-items:center; gap:1.5rem;">
+            <div class="spinner" style="width:60px;height:60px;border:5px solid #e2e8f0;border-top:5px solid var(--brand-color);border-radius:50%;animation:spin 1s linear infinite;"></div>
+            <div style="font-weight:600;color:var(--text-secondary);">Loading trainer data...</div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    // ── Login Logic ────────────────────────────────────────
+    const ALLOWED_USER = "drfareeha";
+
+    document.getElementById('login-btn').addEventListener('click', () => {
+        const u = document.getElementById('username').value.trim().toLowerCase();
+        const p = document.getElementById('password').value;
+        const err = document.getElementById('login-error');
+
+        if (!u) { err.textContent = "Username is required"; return; }
+        if (u !== ALLOWED_USER.toLowerCase()) { err.textContent = "Invalid username"; return; }
+        if (!p) { err.textContent = "Password is required"; return; }
+
+        document.getElementById('login-container').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+        fetchData();
+    });
+
+    document.getElementById('password').addEventListener('keypress', e => {
+        if (e.key === 'Enter') document.getElementById('login-btn').click();
+    });
+
+    // ── Sidebar Mobile Toggle ─────────────────────────────
+    const sidebar = document.getElementById('left-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const menuBtn  = document.getElementById('mobile-menu-btn');
+
+    menuBtn.addEventListener('click', () => {
+        sidebar.classList.add('mobile-open');
+        overlay.classList.add('active');
+    });
+
+    overlay.addEventListener('click', () => {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+    });
+
+    // ── Timeline Logic ─────────────────────────────────────
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSTuCIUeCb-n_viWkE3K0rK9KBECMSaSHTJr0Vze5wZTeKOWBJX6Ok7F-ktlrvr5nS2sP-rOca2pmJX/pub?gid=187433820&single=true&output=csv";
+
+    const METADATA_COLS = ['name','pair','province','district','tehsil','duty_station','ph_number'];
+    const STOP_COLUMN   = "3-Mar";
+    const URDU_REGEX    = /[\u0600-\u06FF\u0750-\u077F]/;
+
+    let allData = [];
+    let timelineKeys = [];
+
+    function fetchData() {
+        document.getElementById('loading').style.display = 'flex';
+        Papa.parse(SHEET_URL, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: results => {
+                allData = results.data.map(row => {
+                    const newRow = {};
+                    Object.keys(row).forEach(k => newRow[k.trim()] = row[k]?.trim() ?? '');
+                    return newRow;
+                });
+
+                const fields = results.meta.fields.map(f => f.trim());
+                const stopIdx = fields.indexOf(STOP_COLUMN);
+                let dateFields = stopIdx === -1 ? fields : fields.slice(stopIdx + 1);
+                timelineKeys = dateFields.filter(f => !METADATA_COLS.includes(f));
+
+                document.getElementById('loading').style.display = 'none';
+                initFilters();
+            },
+            error: err => {
+                document.getElementById('dashboard-content').innerHTML = `<div style="padding:4rem;text-align:center;color:#ef4444;">Error loading data: ${err.message}</div>`;
+            }
+        });
+    }
+
+  function initFilters() {
+    const provSel   = document.getElementById('provinceSelect');
+    const distSel   = document.getElementById('districtSelect');
+    const searchBox = document.getElementById('searchBox');
+    const trainSel  = document.getElementById('trainerSelect');
+    const suggestionsDiv = document.getElementById('trainer-suggestions');
+
+    // Populate provinces
+    [...new Set(allData.map(d => d.province).filter(Boolean))].sort().forEach(p => {
+        provSel.insertAdjacentHTML('beforeend', `<option value="${p}">${p}</option>`);
+    });
+
+    // ── Live search + suggestions ────────────────────────────────
+    let currentSuggestions = [];
+
+    function showSuggestions(filteredNames) {
+        if (filteredNames.length === 0) {
+            suggestionsDiv.style.display = 'none';
+            return;
+        }
+
+        let html = '';
+        filteredNames.slice(0, 12).forEach(name => {   // show max 12 suggestions
+            html += `<div data-name="${name}">${name.replace(/_/g, ' ')}</div>`;
+        });
+
+        suggestionsDiv.innerHTML = html;
+        suggestionsDiv.style.display = 'block';
+
+        // Click on suggestion
+        suggestionsDiv.querySelectorAll('div').forEach(item => {
+            item.addEventListener('click', () => {
+                const selectedName = item.dataset.name;
+                trainSel.value = selectedName;
+                searchBox.value = item.textContent;
+                suggestionsDiv.style.display = 'none';
+                renderDashboard(selectedName);
+            });
+        });
+    }
+
+    searchBox.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase().trim();
+
+        if (term.length >= 1) {
+            provSel.value = 'All';
+            distSel.value = 'All';
+            provSel.disabled = true;
+            distSel.disabled = true;
+            trainSel.disabled = false;
+
+            // Show suggestions
+            const filtered = allData
+                .map(d => d.name)
+                .filter(n => n && n.toLowerCase().includes(term))
+                .filter((v,i,a) => a.indexOf(v) === i) // unique
+                .sort();
+
+            showSuggestions(filtered);
+        } else {
+            provSel.disabled = false;
+            distSel.disabled = false;
+            suggestionsDiv.style.display = 'none';
+            updateTrainers();
+        }
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', e => {
+        if (!searchBox.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+            suggestionsDiv.style.display = 'none';
+        }
+    });
+
+    // ── Province → District → Trainer logic ───────────────────────
+    provSel.addEventListener('change', () => {
+        searchBox.value = '';
+        suggestionsDiv.style.display = 'none';
+        provSel.disabled = false;
+        updateDistricts();
+        distSel.disabled = false;
+        distSel.value = 'All';
+        updateTrainers();
+    });
+
+    distSel.addEventListener('change', () => {
+        updateTrainers();
+    });
+
+    trainSel.addEventListener('change', () => {
+        const val = trainSel.value;
+        if (val) {
+            searchBox.value = trainSel.options[trainSel.selectedIndex].text;
+            renderDashboard(val);
+        }
+    });
+
+    updateDistricts();
+    updateTrainers();
+}
+
+// You can keep your updateDistricts() and updateTrainers() functions
+// Just make sure updateTrainers() sets the <select id="trainerSelect"> options
+    function updateDistricts() {
+        const prov = document.getElementById('provinceSelect').value;
+        const distSel = document.getElementById('districtSelect');
+
+        distSel.innerHTML = '<option value="All">All Districts</option>';
+
+        let data = prov === 'All' ? allData : allData.filter(d => d.province === prov);
+        [...new Set(data.map(d => d.district).filter(Boolean))].sort().forEach(d => {
+            distSel.insertAdjacentHTML('beforeend', `<option value="${d}">${d}</option>`);
+        });
+    }
+
+    function updateTrainers(search = "") {
+        const prov = document.getElementById('provinceSelect').value;
+        const dist = document.getElementById('districtSelect').value;
+        const trainSel = document.getElementById('trainerSelect');
+
+        trainSel.innerHTML = '<option value="" disabled selected>Select Trainer</option>';
+        trainSel.disabled = false;
+
+        let filtered = allData;
+
+        if (search) {
+            filtered = filtered.filter(d => d.name?.toLowerCase().includes(search));
+        } else {
+            if (prov !== 'All') filtered = filtered.filter(d => d.province === prov);
+            if (dist !== 'All') filtered = filtered.filter(d => d.district === dist);
+        }
+
+        [...new Set(filtered.map(d => d.name).filter(Boolean))].sort().forEach(n => {
+            trainSel.insertAdjacentHTML('beforeend', `<option value="${n}">${n.replace(/_/g,' ')}</option>`);
+        });
+    }
+
+   function renderDashboard(name) {
+    const row = allData.find(r => r.name === name);
+    if (!row) return;
+
+    // Determine date range for filename
+    let datesWithContent = timelineKeys.filter(date => row[date]?.trim());
+    let startDate = datesWithContent.length > 0 ? datesWithContent[0] : 'N/A';
+    let endDate   = datesWithContent.length > 0 ? datesWithContent[datesWithContent.length - 1] : 'N/A';
+
+    let html = `
+        <div class="profile-card card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+                <div>
+                    <h2 style="font-size:1.9rem;font-weight:700;margin-bottom:0.5rem;">${row.name.replace(/_/g,' ')}</h2>
+                    <div style="color:var(--text-secondary);display:flex;align-items:center;gap:0.5rem;font-weight:500;">
+                        <i class="fa-solid fa-location-dot"></i>
+                        ${row.district || '—'}, ${row.province || '—'}
+                    </div>
+                </div>
+                <button id="export-word-btn" style="
+                    background: #4f46e5; 
+                    color: white; 
+                    border: none; 
+                    padding: 0.7rem 1.4rem; 
+                    border-radius: 0.75rem; 
+                    font-weight: 600; 
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                ">
+                    <i class="fa-solid fa-file-word"></i> Export to Word
+                </button>
+            </div>
+
+            <div class="meta-grid">
+                <div class="meta-item"><label>Tehsil</label><span>${row.tehsil || '—'}</span></div>
+                <div class="meta-item"><label>Duty Station</label><span>${row.duty_station || '—'}</span></div>
+                <div class="meta-item"><label>Phone</label><span>${row.ph_number || '—'}</span></div>
+                <div class="meta-item"><label>Pair</label><span>${(row.pair || '—').replace(/_/g,' ')}</span></div>
+            </div>
+        </div>
+
+        <div class="timeline-container card">
+            <div class="timeline-line"></div>
+    `;
+
+    let hasContent = false;
+
+    timelineKeys.forEach(date => {
+        const text = row[date]?.trim();
+        if (!text) return;
+        hasContent = true;
+
+        const isUrdu = URDU_REGEX.test(text);
+        let badge = '';
+        const low = text.toLowerCase();
+        if (low.includes('no audio') || low.includes('missing') || low.includes('issue')) {
+            badge = '<span class="badge badge-issue">Issue</span>';
+        } else if (low === 'present' || text.length < 25) {
+            badge = '<span class="badge badge-present">Verified</span>';
+        }
+
+        html += `
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="report-card">
+                    <div class="report-header">
+                        <div class="report-date">${date}</div>
+                        ${badge}
+                    </div>
+                    <div class="report-body ${isUrdu ? 'urdu-text' : ''}">${text}</div>
+                </div>
+            </div>
+        `;
+    });
+
+    if (!hasContent) {
+        html += `
+            <div class="empty-state" style="padding:6rem 0;">
+                <i class="fa-solid fa-ghost"></i>
+                <h3>No timeline entries found</h3>
+            </div>
+        `;
+    }
+
+    html += '</div>';
+
+    // Now set the HTML
+    document.getElementById('dashboard-content').innerHTML = html;
+
+    // Attach the click listener **after** the button exists in the DOM
+    const exportBtn = document.getElementById('export-word-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            exportToWord(row, startDate, endDate);
+        });
+    }
+}
+
+function exportToWord(trainerRow, startDate, endDate) {
+    // Safety guard #1: library loaded?
+    if (typeof window.docx === 'undefined' || typeof window.docx.Packer === 'undefined') {
+        console.error("docx library failed to load");
+        alert("Word export is not available.\nThe docx library didn't load properly.\nCheck internet connection and open browser console (F12) for errors.");
+        return;
+    }
+
+    // Safety guard #2: FileSaver loaded?
+    if (typeof saveAs === 'undefined') {
+        alert("FileSaver.js is missing – cannot download file.");
+        return;
+    }
+
+    const { Packer, Document, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle } = window.docx;
+
+    const trainerName = trainerRow.name.replace(/_/g, ' ').trim() || "Unknown Trainer";
+
+    const timelineEntries = timelineKeys
+        .filter(date => trainerRow[date]?.trim())
+        .map(date => ({
+            date: date,
+            text: trainerRow[date].trim()
+        }));
+
+    if (timelineEntries.length === 0) {
+        alert("No timeline data to export.");
+        return;
+    }
+
+    // Font size in half-points (docx uses half-points → 11pt = 22 half-points)
+    const FONT_SIZE_11 = 22;
+
+    const doc = new Document({
+        sections: [{
+            properties: {},
+            children: [
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Trainer Fact Report",
+                            bold: true,
+                            size: 32,           // ≈16pt title
+                            font: "Montserrat"
+                        })
+                    ],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 400 }
+                }),
+
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: `Trainer: `, bold: true }),
+                        new TextRun(trainerName)
+                    ],
+                    spacing: { after: 120 }
+                }),
+
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: `Pair: `, bold: true }),
+                        new TextRun((trainerRow.pair || '—').replace(/_/g, ' '))
+                    ],
+                    spacing: { after: 120 }
+                }),
+
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: `District: `, bold: true }),
+                        new TextRun(trainerRow.district || '—')
+                    ],
+                    spacing: { after: 120 }
+                }),
+
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: `Province: `, bold: true }),
+                        new TextRun(trainerRow.province || '—')
+                    ],
+                    spacing: { after: 300 }
+                }),
+
+                new Paragraph({
+                    children: [
+                        new TextRun({ text: `Period: `, bold: true }),
+                        new TextRun(`${startDate} to ${endDate}`)
+                    ],
+                    spacing: { after: 400 }
+                }),
+
+                new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    borders: {
+                        top:    { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                        bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                        left:   { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                        right:  { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                        insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "D3D3D3" },
+                        insideVertical:   { style: BorderStyle.SINGLE, size: 1, color: "D3D3D3" }
+                    },
+                    rows: [
+                        // Header row - bold + font size 11
+                        new TableRow({
+                            children: [
+                                new TableCell({
+                                    children: [new Paragraph({
+                                        children: [
+                                            new TextRun({
+                                                text: "Date",
+                                                bold: true,
+                                                size: FONT_SIZE_11,
+                                                font: "Montserrat"
+                                            })
+                                        ],
+                                        alignment: AlignmentType.CENTER
+                                    })],
+                                    width: { size: 20, type: WidthType.PERCENTAGE },
+                                    shading: { fill: "F2F2F2" }  // light gray background for header
+                                }),
+                                new TableCell({
+                                    children: [new Paragraph({
+                                        children: [
+                                            new TextRun({
+                                                text: "Facts",
+                                                bold: true,
+                                                size: FONT_SIZE_11,
+                                                font: "Montserrat"
+                                            })
+                                        ],
+                                        alignment: AlignmentType.CENTER
+                                    })],
+                                    width: { size: 80, type: WidthType.PERCENTAGE },
+                                    shading: { fill: "F2F2F2" }
+                                })
+                            ]
+                        }),
+
+                        // Data rows - font size 11, no bold
+                        ...timelineEntries.map(entry => new TableRow({
+                            children: [
+                                new TableCell({
+                                    children: [new Paragraph({
+                                        children: [
+                                            new TextRun({
+                                                text: entry.date,
+                                                size: FONT_SIZE_11,
+                                                font: "Montserrat"
+                                            })
+                                        ],
+                                        alignment: AlignmentType.CENTER
+                                    })]
+                                }),
+                                new TableCell({
+                                    children: [new Paragraph({
+                                        children: [
+                                            new TextRun({
+                                                text: entry.text,
+                                                size: FONT_SIZE_11,
+                                                font: URDU_REGEX.test(entry.text) ? "Noto Nastaliq Urdu" : "Montserrat",
+                                                rtl: URDU_REGEX.test(entry.text)
+                                            })
+                                        ]
+                                    })]
+                                })
+                            ]
+                        }))
+                    ]
+                })
+            ]
+        }]
+    });
+
+    const safeTrainerName = trainerName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, ' ').trim();
+    const fileName = `${safeTrainerName} Fact Report ${startDate} to ${endDate}.docx`;
+
+    Packer.toBlob(doc).then(blob => {
+        saveAs(blob, fileName);
+    }).catch(err => {
+        console.error("Export failed:", err);
+        alert("Failed to generate Word document.\nError: " + (err.message || "Unknown"));
+    });
+}
+
+
+</script>
+  <script src="assets/js/shared-sidebar.js"></script>
+</body>
+</html>

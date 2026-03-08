@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IC Location Verification Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    <style>
+        /* Apply Montserrat font */
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+        /* Leaflet map fill */
+        #map {
+            height: 100vh;
+            width: 100vw;
+            z-index: 0;
+        }
+        /* Sidebar container */
+        #sidebar-container {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            height: calc(100vh - 3rem);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        #sidebar-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* Sidebar scrolling */
+        #sidebar {
+            overflow-y: auto;
+            max-height: 100%;
+        }
+        #sidebar::-webkit-scrollbar { width: 6px; }
+        #sidebar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 6px; }
+        #sidebar::-webkit-scrollbar-thumb { background: #c4c4c4; border-radius: 6px; }
+        #sidebar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        /* Tree Styles */
+        .tree-toggle::before {
+            content: '\25B6';
+            display: inline-block;
+            margin-right: 8px;
+            transition: transform 0.2s ease-in-out;
+        }
+        .tree-toggle.open::before {
+            transform: rotate(90deg);
+        }
+        .tree-level {
+            display: none;
+            padding-left: 1.25rem;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tree-level.open {
+            display: block;
+        }
+        .tree-item {
+            cursor: pointer;
+            padding: 6px 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .tree-item:hover {
+            background-color: #f0f4ff;
+            color: #2563eb;
+        }
+        .tree-facility {
+            padding-left: 1.25rem;
+            color: #374151;
+        }
+        .tree-facility:hover {
+            color: #1d4ed8;
+        }
+        /* Loading Spinner */
+        #loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* All form elements */
+        select, button {
+            transition: all 0.2s ease-in-out;
+        }
+        /* Table styles */
+        #dataTable {
+            margin-top: 20px;
+        }
+        #dataTable th {
+            background-color: #f2f2f2;
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid #ddd;
+        }
+        #dataTable td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        .matched {
+            background-color: #d4edda !important;
+            color: #155724;
+        }
+        .mismatched {
+            background-color: #f8d7da !important;
+            color: #721c24;
+        }
+        .export-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .export-btn:hover {
+            background: #0056b3;
+        }
+        .info {
+            margin: 10px 0;
+            padding: 10px;
+            background: #e7f3ff;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="sidebar-container">
+        <aside id="sidebar" class="w-full max-w-md bg-white rounded-lg shadow-xl p-6 space-y-6">
+            <div id="loading-overlay" class="space-y-4 text-center py-10">
+                <div id="loader" class="mx-auto"></div>
+                <p class="text-lg font-medium text-gray-600 animate-pulse">Loading Location Data...</p>
+                <p class="text-sm text-gray-400">This may take a moment.</p>
+            </div>
+            <div id="sidebar-content" class="hidden space-y-6">
+                <header>
+                    <h1 class="text-3xl font-bold text-blue-700">IC Location Verification</h1>
+                    <p class="text-md text-gray-500 font-medium">Interactive Map Dashboard</p>
+                </header>
+                <section class="space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-800 border-b pb-2">Filters</h2>
+                    <div>
+                        <label for="filter-ic" class="block text-sm font-semibold text-gray-700">IC Name</label>
+                        <select id="filter-ic" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 focus:ring-opacity-50">
+                            <option value="all">All ICs</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-trainer" class="block text-sm font-semibold text-gray-700">Trainer Name</label>
+                        <select id="filter-trainer" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 focus:ring-opacity-50">
+                            <option value="all">All Trainers</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-date" class="block text-sm font-semibold text-gray-700">Date</label>
+                        <input type="date" id="filter-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 focus:ring-opacity-50">
+                    </div>
+                    <button id="reset-filters" class="w-full rounded-md bg-gray-600 px-4 py-2 text-md font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 active:bg-gray-800 transform hover:scale-105 active:scale-100">
+                        Reset Filters
+                    </button>
+                </section>
+                <section class="space-y-2">
+                    <h2 class="text-xl font-semibold text-gray-800 border-b pb-2">Location Explorer</h2>
+                    <div id="mind-map-tree" class="text-sm font-medium"></div>
+                </section>
+                <div id="info" class="info" style="display:none;"></div>
+                <button id="exportBtn" class="export-btn w-full" style="display:none;">Export Table as CSV</button>
+            </div>
+        </aside>
+    </div>
+    <main id="map"></main>
+    <table id="dataTable" style="display:none; position:absolute; bottom:20px; right:20px; background:white; z-index:1000; max-width:400px; border-radius:8px; overflow:hidden; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+        <thead>
+            <tr>
+                <th>IC Name</th>
+                <th>Trainer</th>
+                <th>Mode</th>
+                <th>Matched</th>
+                <th>Gap (km)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+<script>
+    // --- CONFIGURATION ---
+    const DB_FILE_PATH = '../../icdeck.db';   // ← Recommended: same folder as HTML
+    // const DB_FILE_PATH = 'bisp_dflt2.db';
+    // const DB_FILE_PATH = '../bisp_dflt2.db';   // only if HTML is in subfolder
+
+    const mapCenter = [31.5204, 74.3587]; // Pakistan center
+    const mapZoom   = 7;
+
+    // --- GLOBAL VARIABLES ---
+    let allICData      = [];
+    let allTrainerData = [];
+    let filteredMatches = [];
+    let icColors = {};
+    let db;  // global database instance
+
+    // --- Initialize sql.js and load DB ---
+    async function initDatabase() {
+        try {
+            console.log("1. Loading sql.js WASM...");
+            const SQL = await initSqlJs({
+                locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+            });
+            console.log("sql.js loaded OK");
+
+            console.log("2. Fetching database from:", DB_FILE_PATH);
+            const response = await fetch(DB_FILE_PATH);
+
+            console.log("Fetch → status:", response.status, response.statusText);
+            if (!response.ok) {
+                throw new Error(`Fetch failed — ${response.status} ${response.statusText}  (check path / server / file existence)`);
+            }
+
+            console.log("3. Reading ArrayBuffer...");
+            const dbBuffer = await response.arrayBuffer();
+            console.log("File size:", (dbBuffer.byteLength / 1024 / 1024).toFixed(2), "MB");
+
+            if (dbBuffer.byteLength < 4096) {
+                throw new Error("Downloaded file is too small — probably not a valid SQLite database");
+            }
+
+            console.log("4. Creating SQLite instance...");
+            db = new SQL.Database(new Uint8Array(dbBuffer));
+
+
+
+
+
+
+
+            // Quick smoke test
+            const tablesResult = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
+            const tableNames = tablesResult[0]?.values?.flat() || [];
+            console.log("Tables found:", tableNames.length ? tableNames : "— no tables found —");
+
+            if (!tableNames.includes("bisp_ic_form_inperson_monitoring") ||
+                !tableNames.includes("aspc_attendance_form")) {
+                console.warn("Warning: expected tables not found in database");
+            }
+
+
+
+            console.log("→ Database initialized successfully ✓");
+        } catch (err) {
+            console.error("!!! initDatabase failed:", err.message);
+            console.error("Stack:", err.stack);
+            throw err;
+        }
+    }
+
+    // --- Query helper ---
+    function queryDatabase(sql) {
+        if (!db) throw new Error('Database not initialized');
+        const res = db.exec(sql);
+        if (res.length === 0) return [];
+        const { columns, values } = res[0];
+        return values.map(row => {
+            return Object.fromEntries(
+                columns.map((col, i) => [col, row[i] == null ? '' : String(row[i])])
+            );
+        });
+    }
+
+    // ────────────────────────────────────────────────
+    // Map & Layers
+    // ────────────────────────────────────────────────
+    const map = L.map('map', { center: mapCenter, zoom: mapZoom });
+
+    const icCluster = L.markerClusterGroup({
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: true,
+        zoomToBoundsOnClick: true,
+        animate: true
+    });
+
+    const trainerCluster = L.markerClusterGroup({
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: true,
+        zoomToBoundsOnClick: true,
+        animate: true
+    });
+
+    const mismatchLines = L.layerGroup();
+
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri'
+    });
+
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    });
+
+    satelliteLayer.addTo(map); // default
+
+    L.control.layers({
+        "Satellite": satelliteLayer,
+        "Street": streetLayer
+    }).addTo(map);
+
+    map.addLayer(icCluster);
+    map.addLayer(trainerCluster);
+    map.addLayer(mismatchLines);
+
+    // ────────────────────────────────────────────────
+    // DOM elements
+    // ────────────────────────────────────────────────
+    const sidebarContainer  = document.getElementById('sidebar-container');
+    const loadingOverlay    = document.getElementById('loading-overlay');
+    const sidebarContent    = document.getElementById('sidebar-content');
+    const filterIcEl        = document.getElementById('filter-ic');
+    const filterTrainerEl   = document.getElementById('filter-trainer');
+    const filterDateEl      = document.getElementById('filter-date');
+    const resetFiltersBtn   = document.getElementById('reset-filters');
+    const treeContainer     = document.getElementById('mind-map-tree');
+    const dataTable         = document.getElementById('dataTable');
+    const dataTbody         = document.querySelector('#dataTable tbody');
+    const exportBtn         = document.getElementById('exportBtn');
+    const infoEl            = document.getElementById('info');
+
+    // ────────────────────────────────────────────────
+    // Event listeners
+    // ────────────────────────────────────────────────
+    filterIcEl.addEventListener('change', applyFilters);
+    filterTrainerEl.addEventListener('change', applyFilters);
+    filterDateEl.addEventListener('change', applyFilters);
+    resetFiltersBtn.addEventListener('click', resetFilters);
+    exportBtn.addEventListener('click', exportToCSV);
+
+    // Start
+    loadData();
+
+    // ────────────────────────────────────────────────
+    // Load & process data
+    // ────────────────────────────────────────────────
+    async function loadData() {
+        try {
+            await initDatabase();
+
+            const icRes = queryDatabase('SELECT * FROM "bisp_ic_form_inperson_monitoring"');
+            allICData = icRes.map(row => ({
+                ...row,
+                parsedDate: parseDate(row.SubmissionDate),
+                lat: parseFloat(row['session_location-Latitude']) || 0,
+                lon: parseFloat(row['session_location-Longitude']) || 0
+            })).filter(r => r.ic_name_select && r.trainer_name && r.parsedDate && !isNaN(r.lat) && !isNaN(r.lon));
+
+            const trainerRes = queryDatabase('SELECT * FROM "aspc_attendance_form"');
+            allTrainerData = trainerRes.map(row => ({
+                ...row,
+                parsedDate: parseDate(row.SubmissionDate),
+                lat: parseFloat(row['session_location-Latitude']) || 0,
+                lon: parseFloat(row['session_location-Longitude']) || 0,
+                pair: row.pair || ''
+            })).filter(row => {
+                // Must have trainer name (non-empty after trim)
+                if (!row.trainer_name || String(row.trainer_name).trim() === '') return false;
+
+                // Must have assigned_ic
+                if (!row.assigned_ic || String(row.assigned_ic).trim() === '') return false;
+
+                // Must have valid date
+                if (!row.parsedDate) return false;
+
+                // Latitude & Longitude must exist, be numbers, NOT NaN, and NOT zero/empty
+                const lat = row.lat;
+                const lon = row.lon;
+
+                if (typeof lat !== 'number' || isNaN(lat) || lat === 0) return false;
+                if (typeof lon !== 'number' || isNaN(lon) || lon === 0) return false;
+
+                // Optional: rough Pakistan bounds check (helps catch bad geocodes)
+                if (lat < 23 || lat > 37 || lon < 60 || lon > 77) return false;
+
+                return true;
+            });
+            processData();
+            populateFilterDropdowns();
+            applyFilters();
+
+            loadingOverlay.classList.add('hidden');
+            sidebarContent.classList.remove('hidden');
+            sidebarContainer.classList.add('visible');
+        } catch (err) {
+            console.error('Error in loadData:', err);
+            loadingOverlay.innerHTML = `
+                <p style="color:#991b1b; font-weight:bold; padding:20px;">
+                    Failed to load data<br><br>
+                    ${err.message}<br><br>
+                    <small>Open browser console (F12) for details</small>
+                </p>`;
+            sidebarContainer.classList.add('visible');
+        }
+    }
+
+    function parseDate(dateStr) {
+        if (!dateStr) return null;
+        try {
+            // Handle both DD/MM/YYYY and ISO formats
+            if (dateStr.includes('/')) {
+                const [d, m, y] = dateStr.split(' ')[0].split('/');
+                return new Date(+y, +m-1, +d).toISOString().split('T')[0];
+            }
+            const dt = new Date(dateStr);
+            return isNaN(dt) ? null : dt.toISOString().split('T')[0];
+        } catch {
+            return null;
+        }
+    }
+
+    function processData() {
+        const uniqueICs = [...new Set(allICData.map(d => d.ic_name_select))];
+        icColors = generateColors(uniqueICs);
+    }
+
+    function populateFilterDropdowns() {
+        const ics     = [...new Set(allICData.map(d => d.ic_name_select))].sort();
+        const trainers = [...new Set(allTrainerData.map(d => d.trainer_name))].sort();
+
+        ics.forEach(ic => {
+            const opt = document.createElement('option');
+            opt.value = opt.textContent = ic;
+            filterIcEl.appendChild(opt);
+        });
+
+        trainers.forEach(tr => {
+            const opt = document.createElement('option');
+            opt.value = opt.textContent = tr;
+            filterTrainerEl.appendChild(opt);
+        });
+    }
+
+    // The rest remains exactly the same as your original code
+    // (applyFilters, resetFilters, updateMap, createColoredIcon, updateTable, exportToCSV, buildMindMapTree, createTreeLevel, haversineDistance, generateColors)
+
+    function applyFilters() {
+        const selectedIC = filterIcEl.value;
+        const selectedTrainer = filterTrainerEl.value;
+        const selectedDate = filterDateEl.value;
+
+        let icFiltered = allICData.filter(row => 
+            (selectedIC === 'all' || row.ic_name_select === selectedIC) &&
+            (selectedTrainer === 'all' || row.trainer_name === selectedTrainer) &&
+            (!selectedDate || row.parsedDate === selectedDate)
+        );
+
+        let trainerFiltered = allTrainerData.filter(row => 
+            (selectedIC === 'all' || row.assigned_ic === selectedIC) &&
+            (selectedTrainer === 'all' || row.trainer_name === selectedTrainer) &&
+            (!selectedDate || row.parsedDate === selectedDate)
+        );
+
+        filteredMatches = [];
+        icFiltered.forEach(icRow => {
+            const matchingTrainer = trainerFiltered.find(t => 
+                t.trainer_name === icRow.trainer_name && 
+                t.parsedDate === icRow.parsedDate &&
+                t.assigned_ic === icRow.ic_name_select
+            );
+            if (matchingTrainer) {
+                const distance = haversineDistance(icRow.lat, icRow.lon, matchingTrainer.lat, matchingTrainer.lon);
+                const isInPerson = icRow.mode_of_monitoring === 'in-person';
+                const isMatched = !isInPerson || distance <= 1;
+                filteredMatches.push({
+                    icName: icRow.ic_name_select,
+                    trainerName: icRow.trainer_name,
+                    mode: icRow.mode_of_monitoring,
+                    icLat: icRow.lat,
+                    icLon: icRow.lon,
+                    trainerLat: matchingTrainer.lat,
+                    trainerLon: matchingTrainer.lon,
+                    pair: matchingTrainer.pair,
+                    distance: distance.toFixed(2),
+                    matched: isMatched ? 'Yes' : 'No',
+                    parsedDate: icRow.parsedDate
+                });
+
+            }
+        });
+
+        updateMap();
+        updateTable();
+        buildMindMapTree();
+    }
+
+    function resetFilters() {
+        filterIcEl.value = 'all';
+        filterTrainerEl.value = 'all';
+        filterDateEl.value = '';
+        applyFilters();
+        map.flyTo(mapCenter, mapZoom, { duration: 1 });
+    }
+
+    function updateMap() {
+        icCluster.clearLayers();
+        trainerCluster.clearLayers();
+        mismatchLines.clearLayers();
+
+        const bounds = L.latLngBounds();
+
+        filteredMatches.forEach(item => {
+            const icIcon = createColoredIcon(icColors[item.icName] || '#3b82f6', 'IC');
+            const icMarker = L.marker([item.icLat, item.icLon], { icon: icIcon }).bindPopup(
+                `<div style="font-family: 'Montserrat', sans-serif;">
+                    <h3 class="font-bold text-blue-700">IC: ${item.icName}</h3>
+                    <p>Mode: ${item.mode}</p>
+                    <p>Date: ${item.parsedDate}</p>
+                </div>`
+
+            );
+            icCluster.addLayer(icMarker);
+            bounds.extend([item.icLat, item.icLon]);
+
+            let trainerIcon = createColoredIcon('#10b981', 'T');
+            if (item.mode === 'in-person' && parseFloat(item.distance) > 1) {
+                trainerIcon = createColoredIcon('#ef4444', 'T');
+            }
+            const trainerMarker = L.marker([item.trainerLat, item.trainerLon], { icon: trainerIcon }).bindPopup(
+                `<div style="font-family: 'Montserrat', sans-serif;">
+                    <h3 class="font-bold text-green-700">Trainer: ${item.trainerName}</h3>
+                    <p>Pair: ${item.pair || 'N/A'}</p>
+                    <p>Location: ${item.trainerLat.toFixed(4)}, ${item.trainerLon.toFixed(4)}</p>
+                    <p>Distance to IC: <strong>${item.distance} km</strong></p>
+                </div>`
+            );
+            trainerCluster.addLayer(trainerMarker);
+            bounds.extend([item.trainerLat, item.trainerLon]);
+
+            if (item.mode === 'in-person' && parseFloat(item.distance) > 1) {
+                const latlngs = [[item.icLat, item.icLon], [item.trainerLat, item.trainerLon]];
+                L.polyline(latlngs, { color: 'red', dashArray: '10, 10', weight: 3 }).addTo(mismatchLines);
+            }
+        });
+
+        if (filteredMatches.length > 0) {
+            map.fitBounds(bounds, { padding: [20, 20] });
+        } else {
+            map.setView(mapCenter, mapZoom);
+        }
+    }
+
+    function createColoredIcon(color, label) {
+        const svgIcon = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="30px" height="30px" 
+                 style="filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3));">
+              <circle fill="${color}" cx="12" cy="12" r="12"/>
+              <text x="12" y="16" font-family="Arial" font-size="12" fill="white" text-anchor="middle" dominant-baseline="middle">${label}</text>
+            </svg>
+        `;
+        return L.divIcon({
+            html: svgIcon,
+            className: '',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15]
+        });
+    }
+
+    function updateTable() {
+        dataTbody.innerHTML = '';
+        const table = document.getElementById('dataTable');
+        exportBtn.style.display = filteredMatches.length > 0 ? 'block' : 'none';
+        infoEl.style.display = filteredMatches.length > 0 ? 'block' : 'none';
+
+        if (filteredMatches.length === 0) {
+            dataTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">No matches found</td></tr>';
+            table.style.display = 'none';
+            infoEl.innerHTML = '';
+            return;
+        }
+
+        filteredMatches.forEach(item => {
+            const rowClass = item.matched === 'Yes' ? 'matched' : 'mismatched';
+            const row = document.createElement('tr');
+            row.className = rowClass;
+            row.innerHTML = `
+                <td>${item.icName}</td>
+                <td>${item.trainerName}</td>
+                <td>${item.mode}</td>
+                <td>${item.matched}</td>
+                <td>${item.distance}</td>
+            `;
+            dataTbody.appendChild(row);
+        });
+
+        table.style.display = 'table';
+        infoEl.innerHTML = `Showing ${filteredMatches.length} location matches. <strong>${filteredMatches.filter(m => m.matched === 'No').length}</strong> mismatches detected.`;
+    }
+
+    function exportToCSV() {
+        if (filteredMatches.length === 0) return;
+        const headers = ['IC Name', 'Trainer Name', 'Mode of Monitoring', 'Location Matched', 'Gap (km)', 'Trainer Pair'];
+        const csvContent = [
+            headers.join(','),
+            ...filteredMatches.map(item => [
+                `"${item.icName}"`,
+                `"${item.trainerName}"`,
+                `"${item.mode}"`,
+                `"${item.matched}"`,
+                `"${item.distance}"`,
+                `"${item.pair || 'N/A'}"`
+            ].join(','))
+        ].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `ic_location_verification_${filterDateEl.value || 'all'}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function buildMindMapTree() {
+        treeContainer.innerHTML = '';
+
+        const grouped = {};
+        filteredMatches.forEach(item => {
+            const date = item.parsedDate;
+            if (!grouped[item.icName]) grouped[item.icName] = {};
+            if (!grouped[item.icName][item.trainerName]) grouped[item.icName][item.trainerName] = {};
+            if (!grouped[item.icName][item.trainerName][date]) grouped[item.icName][item.trainerName][date] = [];
+            grouped[item.icName][item.trainerName][date].push(item);
+        });
+
+        const ics = Object.keys(grouped).sort();
+
+        ics.forEach(ic => {
+            const icEl = createTreeLevel(ic, treeContainer, icColors[ic]);
+            const trainers = Object.keys(grouped[ic]).sort();
+
+            trainers.forEach(trainer => {
+                const trainerEl = createTreeLevel(trainer, icEl);
+                const dates = Object.keys(grouped[ic][trainer]).sort().reverse();
+
+                dates.forEach(date => {
+                    const dateEl = createTreeLevel(date, trainerEl);
+                    grouped[ic][trainer][date].forEach(match => {
+                        const item = document.createElement('div');
+                        item.className = `tree-item tree-facility ${match.matched === 'No' ? 'mismatched' : 'matched'}`;
+                        item.innerHTML = `${match.mode} (${match.matched}) - ${match.distance}km`;
+                        item.title = `Click to fly to location`;
+                        item.addEventListener('click', () => {
+                            map.flyToBounds([
+                                [match.icLat, match.icLon],
+                                [match.trainerLat, match.trainerLon]
+                            ], { duration: 1 });
+
+                        });
+                        dateEl.appendChild(item);
+                    });
+                });
+            });
+        });
+
+        treeContainer.querySelectorAll('.tree-toggle').forEach(toggle => {
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggle.classList.toggle('open');
+                const level = toggle.nextElementSibling;
+                level.classList.toggle('open');
+
+            });
+        });
+    }
+
+    function createTreeLevel(name, parentEl, color = null) {
+        const wrapper = document.createElement('div');
+        const toggle = document.createElement('div');
+        toggle.className = 'tree-toggle tree-item font-semibold';
+        toggle.textContent = name;
+        if (color) toggle.style.color = color;
+        const level = document.createElement('div');
+        level.className = 'tree-level';
+        wrapper.appendChild(toggle);
+        wrapper.appendChild(level);
+        parentEl.appendChild(wrapper);
+        return level;
+    }
+
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    function generateColors(items) {
+        const colors = {};
+        const total = items.length;
+        const hueStep = 360 / total;
+        items.forEach((item, index) => {
+            const hue = Math.floor(index * hueStep);
+            colors[item] = `hsl(${hue}, 70%, 50%)`;
+        });
+        return colors;
+    }
+</script>
+</body>
+</html>
+

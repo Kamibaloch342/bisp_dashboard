@@ -1,0 +1,40 @@
+{
+  "name": "bisp-dashboard",
+  "version": "1.0.0",
+  "description": "DFLT Phase 2 BISP Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node scripts/start.js",
+    "local": "node server.js",
+    "dev": "nodemon server.js",
+    "fetch-db": "node scripts/fetch-db.js"
+  },
+  "dependencies": {
+    "basic-ftp": "^5.0.5",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.6.2",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.19.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "author": "Ammad",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dflt2sdpi/SDPI_Dashboard_Live.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/dflt2sdpi/SDPI_Dashboard_Live/issues"
+  },
+  "homepage": "https://github.com/dflt2sdpi/SDPI_Dashboard_Live#readme"
+}

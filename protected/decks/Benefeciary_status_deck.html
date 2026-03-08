@@ -1,0 +1,714 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beneficiary Profile Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --indigo: #4f46e5;
+        }
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        #left-sidebar { position: fixed; inset: 0 auto 0 0; width: 76px; background: white; border-right: 1px solid #e5e7eb; box-shadow: 2px 0 15px rgba(0,0,0,0.04); transition: width 0.35s ease; overflow: hidden; z-index: 50; }
+        #left-sidebar .sidebar-content { opacity: 0; transition: opacity 0.25s ease 0.08s; }
+        #left-sidebar:hover { width: 280px; }
+        #left-sidebar:hover .sidebar-content { opacity: 1; }
+        @media (max-width: 1023px) { #left-sidebar { transform: translateX(-100%); width: 280px !important; } #left-sidebar.mobile-open { transform: translateX(0); } }
+        #sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; display: none; }
+        #sidebar-overlay.active { display: block; }
+        .card { background: var(--card); border-radius: 1.5rem; border: 1px solid var(--border); padding: 1.5rem; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+        .kpi-card { border-radius: 1.5rem; padding: 1.25rem 1.5rem; color: white; position: relative; overflow: hidden; transition: transform 0.22s ease, box-shadow 0.22s ease; }
+        .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(0,0,0,0.2); }
+        .kpi-bg-icon { position: absolute; right: -10px; bottom: -10px; opacity: 0.12; pointer-events: none; }
+        .section-title { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+        .funnel-track { background: #e2e8f0; border-radius: 99px; height: 12px; overflow: hidden; }
+        .funnel-fill { height: 100%; border-radius: 99px; transition: width 1.4s cubic-bezier(0.4,0,0.2,1); }
+        #loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.97); display: flex; flex-direction: column; gap: 1rem; justify-content: center; align-items: center; z-index: 9999; }
+        .spinner { width: 52px; height: 52px; border-radius: 50%; border: 6px solid #e0e7ff; border-top-color: #4f46e5; animation: spin 0.85s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-up { animation: fadeUp 0.5s ease both; }
+        .chart-h-300 { position: relative; height: 300px; width: 100%; }
+        .chart-h-360 { position: relative; height: 360px; width: 100%; }
+        .chart-h-220 { position: relative; height: 220px; width: 100%; }
+        @media (max-width: 768px) { .chart-h-300, .chart-h-360 { height: 240px; } }
+    </style>
+</head>
+<body class="antialiased">
+
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <p class="text-sm font-semibold text-indigo-600 mt-1">Loading beneficiary dataâ€¦</p>
+</div>
+
+<button id="mobile-menu-btn" class="lg:hidden fixed top-4 left-4 z-50 bg-white p-2.5 rounded-xl shadow-md">
+    <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+</button>
+
+    <!-- Slim expanding sidebar -->
+<aside id="left-sidebar">
+    <div class="sidebar-content p-5">
+        <div class="border-b pb-4 mb-4 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-indigo-600">Decks</h2>
+            <button id="close-sidebar-btn" class="lg:hidden text-gray-700"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <nav><ul class="space-y-1.5">
+            <li><a href="../index.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="ml-3">DFLT Status Deck</span></a></li>
+            <li><a href="../decks/Benefeciary_status_deck.html" class="flex items-center p-2 text-base font-normal rounded-lg bg-indigo-100 text-indigo-700 font-semibold"><svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg><span class="ml-3">Beneficiary Status</span></a></li>
+            <li><a href="../decks/beneficiary_data_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h18M3 18h18"/></svg><span class="ml-3">Beneficiary Data</span></a></li>
+            <li><a href="../decks/DFLT_2_Soft_launch_Map.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg><span class="ml-3">DFLT Mapping</span></a></li>
+            <li><a href="../decks/Trainings_Locations_Viewers.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><span class="ml-3">DFLT Session</span></a></li>
+            <li><a href="../decks/trainers_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg><span class="ml-3">Trainers Progress</span></a></li>
+            <li><a href="../decks/ic_data_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg><span class="ml-3">IC Monitoring Deck</span></a></li>
+            <li><a href="../decks/GRM Table.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg><span class="ml-3">GRM Analytics Table</span></a></li>
+            <li><a href="../decks/duration_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="ml-3">Duration Analysis</span></a></li>
+            <li><a href="../decks/trainer_report.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span class="ml-3">Trainer Report Deck</span></a></li>
+            <li><a href="../decks/DFLT-Target Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg><span class="ml-3">Target Achievement</span></a></li>
+            <li><a href="../decks/DFLT_Visuals_Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg><span class="ml-3">DFLT Visuals Deck</span></a></li>
+            <li><a href="../decks/DFLT Pre-Post.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg><span class="ml-3">DFLT Pre Post</span></a></li>
+        </ul></nav>
+    </div>
+</aside>
+<div id="sidebar-overlay"></div>
+
+<main class="lg:ml-[76px] transition-all duration-300">
+<div class="max-w-[1800px] mx-auto p-6 md:p-8 space-y-8">
+
+    <!-- â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <header class="card fade-up" style="animation-delay:0s">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <img src="https://www.sdpi.org/assets/images/sdpi-logo-2020.webp" alt="SDPI" class="h-12 w-auto">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900">Beneficiary Profile Dashboard</h1>
+                    <p class="text-sm text-gray-500 mt-0.5">DFLT Program â€” Demographics, Financial Inclusion & Retention</p>
+                </div>
+            </div>
+            <div class="text-right shrink-0">
+                <div class="text-xs text-gray-400 uppercase tracking-wide">Last Submission</div>
+                <div id="last-updated-display" class="text-sm font-bold text-indigo-600 mt-0.5">â€”</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- â”€â”€ KPI Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4 fade-up" style="animation-delay:0.1s">
+        <!-- Total -->
+        <div class="kpi-card" style="background: linear-gradient(135deg,#4f46e5,#6366f1);">
+            <div class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Registered</div>
+            <div id="kpi-total" class="text-3xl font-extrabold">0</div>
+            <div class="text-xs opacity-70 mt-1">total beneficiaries</div>
+            <svg class="kpi-bg-icon w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-2.121M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-2.121M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <!-- Day 2 -->
+        <div class="kpi-card" style="background: linear-gradient(135deg,#0891b2,#06b6d4);">
+            <div class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Day 2 Attendance</div>
+            <div id="kpi-day2" class="text-3xl font-extrabold">0%</div>
+            <div class="text-xs opacity-70 mt-1" id="kpi-day2-abs">â€” attended</div>
+            <svg class="kpi-bg-icon w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <!-- Verified -->
+        <div class="kpi-card" style="background: linear-gradient(135deg,#059669,#10b981);">
+            <div class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Verified Retention</div>
+            <div id="kpi-verified" class="text-3xl font-extrabold">0%</div>
+            <div class="text-xs opacity-70 mt-1" id="kpi-verified-abs">â€” verified</div>
+            <svg class="kpi-bg-icon w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+        </div>
+        <!-- Avg Age -->
+        <div class="kpi-card" style="background: linear-gradient(135deg,#d97706,#f59e0b);">
+            <div class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Average Age</div>
+            <div id="kpi-avg-age" class="text-3xl font-extrabold">0</div>
+            <div class="text-xs opacity-70 mt-1">years</div>
+            <svg class="kpi-bg-icon w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <!-- Mobile Money -->
+        <div class="kpi-card" style="background: linear-gradient(135deg,#7c3aed,#8b5cf6);">
+            <div class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Mobile Money</div>
+            <div id="kpi-mobile-money" class="text-3xl font-extrabold">0%</div>
+            <div class="text-xs opacity-70 mt-1">have mobile wallet</div>
+            <svg class="kpi-bg-icon w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        </div>
+        <!-- Bank Account -->
+        <div class="kpi-card" style="background: linear-gradient(135deg,#be185d,#ec4899);">
+            <div class="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Bank Account</div>
+            <div id="kpi-bank" class="text-3xl font-extrabold">0%</div>
+            <div class="text-xs opacity-70 mt-1">have bank account</div>
+            <svg class="kpi-bg-icon w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        </div>
+    </div>
+
+    <!-- â”€â”€ Retention Funnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <div class="card fade-up" style="animation-delay:0.15s">
+        <div class="flex items-center gap-2 mb-5">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 inline-block"></span>
+            <span class="section-title text-indigo-600">Beneficiary Engagement Funnel</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <div class="flex justify-between text-sm font-semibold mb-1.5">
+                    <span class="text-gray-700">Registered</span>
+                    <span id="funnel-reg-count" class="text-indigo-600">â€”</span>
+                </div>
+                <div class="funnel-track"><div id="funnel-reg" class="funnel-fill bg-indigo-500" style="width:100%"></div></div>
+                <div class="text-xs text-gray-400 mt-1">100% â€” baseline</div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm font-semibold mb-1.5">
+                    <span class="text-gray-700">Attended Day 2</span>
+                    <span id="funnel-day2-count" class="text-cyan-600">â€”</span>
+                </div>
+                <div class="funnel-track"><div id="funnel-day2" class="funnel-fill bg-cyan-500" style="width:0%"></div></div>
+                <div class="text-xs text-gray-400 mt-1" id="funnel-day2-pct">0% of registered</div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm font-semibold mb-1.5">
+                    <span class="text-gray-700">Verified Retention</span>
+                    <span id="funnel-ver-count" class="text-emerald-600">â€”</span>
+                </div>
+                <div class="funnel-track"><div id="funnel-ver" class="funnel-fill bg-emerald-500" style="width:0%"></div></div>
+                <div class="text-xs text-gray-400 mt-1" id="funnel-ver-pct">0% of registered</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- â”€â”€ Registration Trend + Phase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-up" style="animation-delay:0.2s">
+        <div class="card lg:col-span-2">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                <span class="section-title text-indigo-600">Monthly Registration Trend</span>
+            </div>
+            <div class="chart-h-300"><canvas id="trend-chart"></canvas></div>
+        </div>
+        <div class="card">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <span class="section-title text-amber-600">DFLT Phase Distribution</span>
+            </div>
+            <div class="chart-h-300"><canvas id="phase-chart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- â”€â”€ Demographics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <div>
+        <div class="flex items-center gap-3 mb-4 fade-up" style="animation-delay:0.25s">
+            <div class="h-px flex-1 bg-gradient-to-r from-indigo-200 to-transparent"></div>
+            <span class="section-title text-indigo-600 px-3">Demographics</span>
+            <div class="h-px flex-1 bg-gradient-to-l from-indigo-200 to-transparent"></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-up" style="animation-delay:0.28s">
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Education Level Distribution</p>
+                <div class="chart-h-300"><canvas id="education-chart"></canvas></div>
+            </div>
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Age Distribution</p>
+                <div class="chart-h-300"><canvas id="age-chart"></canvas></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 fade-up" style="animation-delay:0.32s">
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Province Spread</p>
+                <div class="chart-h-300"><canvas id="province-chart"></canvas></div>
+            </div>
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Zone Distribution</p>
+                <div class="chart-h-300"><canvas id="zone-chart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- â”€â”€ Economic Profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <div>
+        <div class="flex items-center gap-3 mb-4 fade-up" style="animation-delay:0.35s">
+            <div class="h-px flex-1 bg-gradient-to-r from-amber-200 to-transparent"></div>
+            <span class="section-title text-amber-600 px-3">Economic Profile</span>
+            <div class="h-px flex-1 bg-gradient-to-l from-amber-200 to-transparent"></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-up" style="animation-delay:0.38s">
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Willingness to Start Economic Activity</p>
+                <div class="chart-h-300"><canvas id="willingness-chart"></canvas></div>
+            </div>
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Occupation Breakdown</p>
+                <div class="chart-h-300"><canvas id="occupation-chart"></canvas></div>
+            </div>
+        </div>
+        <!-- Income & Loan mini stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 fade-up" style="animation-delay:0.4s">
+            <div class="card flex items-center gap-6">
+                <div class="bg-amber-50 rounded-2xl p-4 shrink-0">
+                    <svg class="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                </div>
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-widest text-gray-400">Avg. Household Income</div>
+                    <div id="kpi-avg-income" class="text-2xl font-extrabold text-amber-600 mt-1">PKR 0</div>
+                    <div class="text-xs text-gray-400 mt-0.5">per month (self-reported)</div>
+                </div>
+            </div>
+            <div class="card flex items-center gap-6">
+                <div class="bg-indigo-50 rounded-2xl p-4 shrink-0">
+                    <svg class="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-widest text-gray-400">Avg. Loan Amount</div>
+                    <div id="kpi-avg-loan" class="text-2xl font-extrabold text-indigo-600 mt-1">PKR 0</div>
+                    <div class="text-xs text-gray-400 mt-0.5">BISP loan (self-reported)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Household & Connectivity -->
+    <div>
+        <div class="flex items-center gap-3 mb-4 fade-up" style="animation-delay:0.42s">
+            <div class="h-px flex-1 bg-gradient-to-r from-sky-200 to-transparent"></div>
+            <span class="section-title text-sky-600 px-3">Household &amp; Connectivity</span>
+            <div class="h-px flex-1 bg-gradient-to-l from-sky-200 to-transparent"></div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 fade-up" style="animation-delay:0.44s">
+            <div class="card text-center">
+                <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Own Phone</div>
+                <div id="kpi-own-phone" class="text-3xl font-extrabold text-sky-600">0%</div>
+                <div class="text-xs text-gray-400 mt-1">have personal phone</div>
+            </div>
+            <div class="card text-center">
+                <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Loan Uptake</div>
+                <div id="kpi-loan" class="text-3xl font-extrabold text-rose-500">0%</div>
+                <div class="text-xs text-gray-400 mt-1">have taken a loan</div>
+            </div>
+            <div class="card text-center">
+                <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Avg. Savings</div>
+                <div id="kpi-avg-savings" class="text-3xl font-extrabold text-emerald-600">PKR 0</div>
+                <div class="text-xs text-gray-400 mt-1">per household</div>
+            </div>
+            <div class="card text-center">
+                <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Phone Ownership</div>
+                <div id="kpi-whatsapp" class="text-3xl font-extrabold text-green-500">0%</div>
+                <div class="text-xs text-gray-400 mt-1">own their device</div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-up" style="animation-delay:0.46s">
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Household Living Arrangement</p>
+                <div class="chart-h-300"><canvas id="living-chart"></canvas></div>
+            </div>
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Phone Ownership</p>
+                <div class="chart-h-300"><canvas id="own-phone-chart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Inclusion -->
+    <div>
+        <div class="flex items-center gap-3 mb-4 fade-up" style="animation-delay:0.48s">
+            <div class="h-px flex-1 bg-gradient-to-r from-emerald-200 to-transparent"></div>
+            <span class="section-title text-emerald-600 px-3">Financial Inclusion</span>
+            <div class="h-px flex-1 bg-gradient-to-l from-emerald-200 to-transparent"></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 fade-up" style="animation-delay:0.50s">
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Bank Account Ownership</p>
+                <div class="chart-h-300"><canvas id="bank-chart"></canvas></div>
+            </div>
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Mobile Money Access</p>
+                <div class="chart-h-300"><canvas id="mobile-money-chart"></canvas></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-up" style="animation-delay:0.52s">
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Loan Source Breakdown</p>
+                <div class="chart-h-300"><canvas id="loan-source-chart"></canvas></div>
+            </div>
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Economic Activity</p>
+                <div class="chart-h-300"><canvas id="eco-activity-chart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Geographic Reach -->
+    <div>
+        <div class="flex items-center gap-3 mb-4 fade-up" style="animation-delay:0.54s">
+            <div class="h-px flex-1 bg-gradient-to-r from-violet-200 to-transparent"></div>
+            <span class="section-title text-violet-600 px-3">Geographic Reach</span>
+            <div class="h-px flex-1 bg-gradient-to-l from-violet-200 to-transparent"></div>
+        </div>
+        <div class="card fade-up" style="animation-delay:0.56s">
+            <p class="font-semibold text-gray-700 mb-4">Top Districts by Beneficiary Count</p>
+            <div style="height:420px"><canvas id="district-chart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Climate Opinion -->
+    <div>
+        <div class="flex items-center gap-3 mb-4 fade-up" style="animation-delay:0.58s">
+            <div class="h-px flex-1 bg-gradient-to-r from-teal-200 to-transparent"></div>
+            <span class="section-title text-teal-600 px-3">Climate Opinion</span>
+            <div class="h-px flex-1 bg-gradient-to-l from-teal-200 to-transparent"></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-up" style="animation-delay:0.60s">
+            <div class="card">
+                <p class="font-semibold text-gray-700 mb-4">Climate Change Agreement</p>
+                <div class="chart-h-300"><canvas id="climate-chart"></canvas></div>
+            </div>
+            <div class="card flex flex-col justify-center gap-3" id="climate-stats">
+                <!-- filled by JS -->
+            </div>
+        </div>
+    </div>
+
+</div><!-- /max-w -->
+</main>
+
+<script>
+    // â”€â”€â”€ Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const leftSidebar   = document.getElementById('left-sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+        leftSidebar.classList.add('mobile-open');
+        sidebarOverlay.classList.add('active');
+    });
+    document.getElementById('close-sidebar-btn').addEventListener('click', closeSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+    function closeSidebar() {
+        leftSidebar.classList.remove('mobile-open');
+        sidebarOverlay.classList.remove('active');
+    }
+
+    // â”€â”€â”€ Chart Instances â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    let trendChart = null, phaseChart = null, educationChart = null, ageChart = null;
+    let provinceChart = null, zoneChart = null, willingnessChart = null;
+    let occupationChart = null, bankChart = null, mobileMoneyChart = null;
+    let livingChart = null, ownPhoneChart = null, loanSourceChart = null;
+    let ecoActivityChart = null, districtChart = null, climateChart = null;
+
+    // â”€â”€â”€ Palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    const PALETTE = ['#4f46e5','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#f97316','#3b82f6','#64748b'];
+
+    const CHART_DEFAULTS = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { family: 'Montserrat', size: 11 }, padding: 14 } } }
+    };
+
+    // â”€â”€â”€ Animate Count â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    function animateCountUp(el, end, duration, options = {}) {
+        const { isFloat = false, prefix = '', suffix = '' } = options;
+        let startTime = null;
+        function step(t) {
+            if (!startTime) startTime = t;
+            const frac = Math.min((t - startTime) / duration, 1);
+            const val = frac * end;
+            el.textContent = prefix + (isFloat ? val.toFixed(1) : Math.floor(val).toLocaleString('en-US')) + suffix;
+            if (frac < 1) requestAnimationFrame(step);
+            else el.textContent = prefix + (isFloat ? end.toFixed(1) : Math.floor(end).toLocaleString('en-US')) + suffix;
+        }
+        requestAnimationFrame(step);
+    }
+
+    // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    function makeDoughnut(canvasId, instance, dataObj, cutout = '60%') {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (instance) instance.destroy();
+        const labels = Object.keys(dataObj);
+        const values = Object.values(dataObj);
+        return new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data: values, backgroundColor: PALETTE, hoverOffset: 6, borderWidth: 2, borderColor: '#fff' }] },
+            options: { ...CHART_DEFAULTS, cutout }
+        });
+    }
+
+    function makePie(canvasId, instance, dataObj) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (instance) instance.destroy();
+        return new Chart(ctx, {
+            type: 'pie',
+            data: { labels: Object.keys(dataObj), datasets: [{ data: Object.values(dataObj), backgroundColor: PALETTE, hoverOffset: 6, borderWidth: 2, borderColor: '#fff' }] },
+            options: { ...CHART_DEFAULTS }
+        });
+    }
+
+    function makeHorizontalBar(canvasId, instance, dataObj, color) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (instance) instance.destroy();
+        const sorted = Object.entries(dataObj).sort((a,b) => b[1] - a[1]).slice(0, 12);
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sorted.map(e => e[0]),
+                datasets: [{ data: sorted.map(e => e[1]), backgroundColor: color + 'cc', borderColor: color, borderWidth: 1, borderRadius: 5 }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, y: { ticks: { font: { size: 10 } } } }
+            }
+        });
+    }
+
+    // â”€â”€â”€ Render all charts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    function renderTrendChart(rows) {
+        const ctx = document.getElementById('trend-chart').getContext('2d');
+        if (trendChart) trendChart.destroy();
+        trendChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: rows.map(r => r.month),
+                datasets: [{
+                    label: 'Registrations',
+                    data: rows.map(r => r.count),
+                    backgroundColor: 'rgba(79,70,229,0.75)',
+                    borderColor: '#4f46e5',
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    hoverBackgroundColor: '#4f46e5'
+                }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 10 } } },
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Count', font: { size: 11 } } }
+                }
+            }
+        });
+    }
+
+    function renderAgeChart(buckets) {
+        const ctx = document.getElementById('age-chart').getContext('2d');
+        if (ageChart) ageChart.destroy();
+        const colors = ['#4f46e5','#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff'];
+        ageChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(buckets),
+                datasets: [{ label: 'Beneficiaries', data: Object.values(buckets), backgroundColor: colors, borderRadius: 6, borderSkipped: false }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
+                }
+            }
+        });
+    }
+
+    function renderOccupationChart(data) {
+        occupationChart = makeHorizontalBar('occupation-chart', occupationChart, data, '#f59e0b');
+    }
+    function renderZoneChart(data) {
+        zoneChart = makeHorizontalBar('zone-chart', zoneChart, data, '#06b6d4');
+    }
+    function renderPhaseChart(data) {
+        phaseChart = makeDoughnut('phase-chart', phaseChart, data, '55%');
+    }
+    function renderEducationChart(data) {
+        educationChart = makeDoughnut('education-chart', educationChart, data);
+    }
+    function renderProvinceChart(data) {
+        provinceChart = makePie('province-chart', provinceChart, data);
+    }
+    function renderWillingnessChart(data) {
+        willingnessChart = makeDoughnut('willingness-chart', willingnessChart, data);
+    }
+    function renderBankChart(data) {
+        bankChart = makeDoughnut('bank-chart', bankChart, data);
+    }
+    function renderMobileMoneyChart(data) {
+        mobileMoneyChart = makeDoughnut('mobile-money-chart', mobileMoneyChart, data);
+    }
+    function renderLivingChart(data) {
+        livingChart = makeDoughnut('living-chart', livingChart, data);
+    }
+    function renderOwnPhoneChart(data) {
+        ownPhoneChart = makeDoughnut('own-phone-chart', ownPhoneChart, data);
+    }
+    function renderLoanSourceChart(data) {
+        loanSourceChart = makeHorizontalBar('loan-source-chart', loanSourceChart, data, '#f43f5e');
+    }
+    function renderEcoActivityChart(data) {
+        ecoActivityChart = makeHorizontalBar('eco-activity-chart', ecoActivityChart, data, '#f59e0b');
+    }
+    function renderDistrictChart(data) {
+        const ctx = document.getElementById('district-chart').getContext('2d');
+        if (districtChart) districtChart.destroy();
+        const sorted = Object.entries(data).sort((a,b) => b[1]-a[1]).slice(0,15);
+        districtChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sorted.map(e => e[0]),
+                datasets: [{ data: sorted.map(e => e[1]), backgroundColor: '#7c3aed99', borderColor: '#7c3aed', borderWidth: 1, borderRadius: 5 }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 11 } } } }
+            }
+        });
+    }
+    function renderClimateChart(data) {
+        const ctx = document.getElementById('climate-chart').getContext('2d');
+        if (climateChart) climateChart.destroy();
+        const colorMap = { 'Strongly agree': '#10b981', 'Agree': '#6ee7b7', 'Neutral': '#94a3b8', 'Disagree': '#fb923c', 'Strongly disagree': '#ef4444' };
+        const labels = Object.keys(data);
+        const colors = labels.map(l => colorMap[l] || '#94a3b8');
+        climateChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data: Object.values(data), backgroundColor: colors, hoverOffset: 6, borderWidth: 2, borderColor: '#fff' }] },
+            options: { ...CHART_DEFAULTS }
+        });
+        const total = Object.values(data).reduce((a,b) => a+b, 0);
+        document.getElementById('climate-stats').innerHTML = labels.map(l => {
+            const pct = total > 0 ? (data[l]/total*100).toFixed(1) : 0;
+            const col = colorMap[l] || '#94a3b8';
+            return '<div class="flex items-center gap-2"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';display:inline-block"></span><span class="text-sm text-gray-600">'+l+'</span><span class="ml-auto text-sm font-bold" style="color:'+col+'">'+pct+'%</span></div>';
+        }).join('');
+    }
+
+    // â”€â”€â”€ Funnel Animation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    function animateFunnel(total, day2, verified) {
+        document.getElementById('funnel-reg-count').textContent = total.toLocaleString();
+        document.getElementById('funnel-day2-count').textContent = day2.toLocaleString();
+        document.getElementById('funnel-ver-count').textContent = verified.toLocaleString();
+        const day2Pct  = total > 0 ? (day2 / total * 100).toFixed(1) : 0;
+        const verPct   = total > 0 ? (verified / total * 100).toFixed(1) : 0;
+        document.getElementById('funnel-day2-pct').textContent = `${day2Pct}% of registered`;
+        document.getElementById('funnel-ver-pct').textContent  = `${verPct}% of registered`;
+        // Animate widths with a small delay to trigger CSS transition
+        setTimeout(() => {
+            document.getElementById('funnel-day2').style.width = `${Math.min(day2Pct, 100)}%`;
+            document.getElementById('funnel-ver').style.width  = `${Math.min(verPct, 100)}%`;
+        }, 400);
+    }
+
+    // â”€â”€â”€ Load & Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    async function loadDataAndInitialize() {
+        const loading = document.getElementById('loading-overlay');
+        try {
+            const [kpisRes, eduRes, provRes, willRes, bankRes, mmRes, ageRes,
+                   trendRes, phaseRes, occRes, zoneRes, lastUpdRes,
+                   livingRes, ownPhoneRes, loanSrcRes, ecoActRes, districtRes, climateRes] = await Promise.all([
+                fetch('/api/kpis'),
+                fetch('/api/chart/education'),
+                fetch('/api/chart/province'),
+                fetch('/api/chart/willingness'),
+                fetch('/api/chart/bank'),
+                fetch('/api/chart/mobile-money'),
+                fetch('/api/age-distribution'),
+                fetch('/api/registration-trend'),
+                fetch('/api/chart/phase'),
+                fetch('/api/chart/occupation'),
+                fetch('/api/chart/zones'),
+                fetch('/api/last-updated'),
+                fetch('/api/chart/living'),
+                fetch('/api/chart/own-phone'),
+                fetch('/api/chart/loan-source'),
+                fetch('/api/chart/economic-activity'),
+                fetch('/api/chart/district'),
+                fetch('/api/chart/climate')
+            ]);
+
+            if (!kpisRes.ok) throw new Error('Failed to load KPIs');
+
+            const kpis      = await kpisRes.json();
+            const edu       = await eduRes.json();
+            const prov      = await provRes.json();
+            const will      = await willRes.json();
+            const bank      = await bankRes.json();
+            const mm        = await mmRes.json();
+            const age       = await ageRes.json();
+            const trend     = await trendRes.json();
+            const phase     = await phaseRes.json();
+            const occ       = await occRes.json();
+            const zone      = await zoneRes.json();
+            const lastUpd   = await lastUpdRes.json();
+            const living    = await livingRes.json();
+            const ownPhone  = await ownPhoneRes.json();
+            const loanSrc   = await loanSrcRes.json();
+            const ecoAct    = await ecoActRes.json();
+            const district  = await districtRes.json();
+            const climate   = await climateRes.json();
+
+            // Last updated
+            if (lastUpd.last_updated) {
+                document.getElementById('last-updated-display').textContent = lastUpd.last_updated.slice(0,10);
+            }
+
+            // KPI cards
+            const D = 1400;
+            animateCountUp(document.getElementById('kpi-total'),        kpis.totalBeneficiaries, D);
+            animateCountUp(document.getElementById('kpi-day2'),         kpis.pctDay2,    D, { isFloat: true, suffix: '%' });
+            animateCountUp(document.getElementById('kpi-verified'),     kpis.pctVerified,D, { isFloat: true, suffix: '%' });
+            animateCountUp(document.getElementById('kpi-avg-age'),      kpis.avgAge,     D, { isFloat: true });
+            animateCountUp(document.getElementById('kpi-mobile-money'), kpis.pctMobileMoney, D, { isFloat: true, suffix: '%' });
+            animateCountUp(document.getElementById('kpi-bank'),         kpis.pctBank,    D, { isFloat: true, suffix: '%' });
+            animateCountUp(document.getElementById('kpi-avg-income'),   kpis.avgIncome,  D, { prefix: 'PKR ' });
+            animateCountUp(document.getElementById('kpi-avg-loan'),     kpis.avgLoan,    D, { prefix: 'PKR ' });
+            document.getElementById('kpi-day2-abs').textContent     = `${(kpis.totalDay2 || 0).toLocaleString()} attended`;
+            document.getElementById('kpi-verified-abs').textContent = `${(kpis.totalVerified || 0).toLocaleString()} verified`;
+            animateCountUp(document.getElementById('kpi-own-phone'),   kpis.pctOwnPhone,  D, { isFloat: true, suffix: '%' });
+            animateCountUp(document.getElementById('kpi-loan'),        kpis.pctTakenLoan, D, { isFloat: true, suffix: '%' });
+            animateCountUp(document.getElementById('kpi-avg-savings'), kpis.avgSavings,   D, { prefix: 'PKR ' });
+            const wpTotal = Object.values(ownPhone).reduce((a,b)=>a+b,0);
+            const wpYes   = ownPhone['Yes'] || 0;
+            document.getElementById('kpi-whatsapp').textContent = wpTotal > 0 ? (wpYes/wpTotal*100).toFixed(1)+'%' : '—';
+
+            // Funnel
+            animateFunnel(kpis.totalBeneficiaries, kpis.totalDay2 || 0, kpis.totalVerified || 0);
+
+            // Charts
+            renderTrendChart(trend);
+            renderPhaseChart(phase);
+            renderEducationChart(edu);
+            renderAgeChart(age);
+            renderProvinceChart(prov);
+            renderZoneChart(zone);
+            renderWillingnessChart(will);
+            renderOccupationChart(occ);
+            renderBankChart(bank);
+            renderMobileMoneyChart(mm);
+            renderLivingChart(living);
+            renderOwnPhoneChart(ownPhone);
+            renderLoanSourceChart(loanSrc);
+            renderEcoActivityChart(ecoAct);
+            renderDistrictChart(district);
+            renderClimateChart(climate);
+
+        } catch (err) {
+            console.error('Dashboard load error:', err);
+        } finally {
+            loading.style.opacity = '0';
+            setTimeout(() => { loading.style.display = 'none'; }, 400);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!sessionStorage.getItem('isVerified')) {
+            window.location.href = '/login.html';
+            return;
+        }
+        loadDataAndInitialize();
+    });
+</script>
+  <script src="assets/js/shared-sidebar.js"></script>
+</body>
+</html>

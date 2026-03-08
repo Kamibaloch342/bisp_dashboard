@@ -1,0 +1,21 @@
+# ─── Dependencies ────────────────────────────────────────────────
+node_modules/
+
+# ─── Environment secrets ─────────────────────────────────────────
+.env
+
+# ─── Databases (190 MB – synced via FTP, never commit to GitHub) ─
+Database/bisp_dflt2.db
+Database/user.db
+
+# ─── Confidential config (contains passwords) ────────────────────
+confidentials/config.json
+confidentials/credentials.txt
+
+# ─── Local-only scripts (contain or prompt for credentials) ──────
+scripts/upload-ftp.ps1
+
+# ─── OS / editor noise ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log

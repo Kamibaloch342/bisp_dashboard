@@ -1,0 +1,550 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainer Fact Report – Audio Reviews</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --brand-color: #4f46e5;
+            --brand-light: #eef2ff;
+            --bg-color: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --sidebar-width: 76px;
+            --sidebar-expanded: 280px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg-color); color: var(--text-primary); }
+
+        /* ── SIDEBAR ─────────────────────────────────────────────────── */
+        #left-sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: var(--sidebar-width); background: white;
+            border-right: 1px solid var(--border-color);
+            transition: width 0.2s ease-out; z-index: 1000;
+            overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column;
+        }
+        #left-sidebar:hover { width: var(--sidebar-expanded); box-shadow: 10px 0 30px rgba(0,0,0,0.05); }
+        .sidebar-header { padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #f1f5f9; }
+        .logo-box { min-width: 42px; height: 42px; background: var(--brand-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; }
+        .sidebar-text { opacity: 0; transition: opacity 0.1s; white-space: nowrap; font-weight: 600; font-size: 0.85rem; }
+        #left-sidebar:hover .sidebar-text { opacity: 1; }
+        .nav-item { display: flex; align-items: center; gap: 1.2rem; padding: 0.7rem 1.5rem; color: var(--text-secondary); cursor: pointer; border-radius: 10px; margin: 0.1rem 0.6rem; text-decoration: none; transition: 0.2s; }
+        .nav-item:hover { background: #f1f5f9; color: var(--brand-color); }
+        .nav-item.active { background: var(--brand-light); color: var(--brand-color); font-weight: 700; }
+        .nav-section-label { font-size: 0.65rem; font-weight: 800; color: #cbd5e1; padding: 1.5rem 1.5rem 0.5rem; text-transform: uppercase; display: none; }
+        #left-sidebar:hover .nav-section-label { display: block; }
+
+        /* ── MAIN LAYOUT ─────────────────────────────────────────────── */
+        #main-wrapper { margin-left: var(--sidebar-width); padding: 2rem; max-width: 1240px; margin-right: auto; }
+
+        /* ── KPI STRIP ───────────────────────────────────────────────── */
+        .kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .kpi-card { background: white; border-radius: 1.25rem; padding: 1.25rem 1.5rem; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04); }
+        .kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: 0.75rem; }
+        .kpi-value { font-size: 1.9rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+        .kpi-label { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; margin-top: 0.4rem; letter-spacing: 0.04em; }
+
+        /* ── FILTERS ─────────────────────────────────────────────────── */
+        .filter-grid {
+            background: white; padding: 1.5rem; border-radius: 1.25rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem; margin-bottom: 2rem; border: 1px solid var(--border-color);
+            position: sticky; top: 1rem; z-index: 900; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+        .filter-group label { display: block; font-size: 0.65rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .filter-input { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.6rem; font-family: inherit; font-size: 0.82rem; background: white; transition: border-color 0.2s; }
+        .filter-input:focus { outline: none; border-color: var(--brand-color); }
+        .btn-reset { width: 100%; padding: 0.55rem 1rem; border: 1px solid var(--border-color); border-radius: 0.6rem; background: white; font-family: inherit; font-size: 0.82rem; cursor: pointer; font-weight: 700; color: var(--text-secondary); transition: 0.2s; }
+        .btn-reset:hover { background: var(--brand-light); color: var(--brand-color); border-color: var(--brand-color); }
+
+        /* ── RESULTS BAR ─────────────────────────────────────────────── */
+        .results-bar { margin-bottom: 1.25rem; }
+        .results-info { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+        .results-info strong { color: var(--text-primary); }
+
+        /* ── TIMELINE ────────────────────────────────────────────────── */
+        #timeline-container { position: relative; padding-left: 2rem; }
+        #timeline-container::before {
+            content: ''; position: absolute; left: 7px; top: 0; bottom: 0;
+            width: 2px; background: linear-gradient(to bottom, var(--brand-color), #c7d2fe);
+        }
+        .timeline-item { position: relative; margin-bottom: 1.5rem; }
+        .timeline-dot {
+            position: absolute; left: -2rem; top: 10px; width: 16px; height: 16px;
+            background: white; border: 3px solid var(--brand-color); border-radius: 50%; z-index: 10;
+        }
+        .timeline-card {
+            background: white; border-radius: 1rem; padding: 1.5rem;
+            border: 1px solid var(--border-color); transition: 0.25s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .timeline-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-color: #c7d2fe; }
+
+        /* Card header badges */
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+        .card-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .badge { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 20px; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem; }
+        .badge-date     { background: var(--brand-light); color: var(--brand-color); }
+        .badge-phase    { background: #ede9fe; color: #7c3aed; }
+        .badge-pc       { background: #d1fae5; color: #059669; }
+        .badge-r1, .badge-r2 { background: #fee2e2; color: #ef4444; }
+        .badge-r3       { background: #fef3c7; color: #d97706; }
+        .badge-r4, .badge-r5 { background: #d1fae5; color: #059669; }
+        .badge-issue    { background: #fee2e2; color: #ef4444; }
+        .badge-skipped  { background: #fff7ed; color: #c2410c; }
+
+        /* Trainer info */
+        .trainer-name { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem; }
+        .reviewer-meta { display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .reviewer-meta span { display: flex; align-items: center; gap: 0.3rem; }
+        .alert-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+
+        /* Observation & recommendation boxes */
+        .obs-box {
+            background: #f8fafc; padding: 1rem; border-radius: 0.75rem;
+            border-left: 4px solid var(--brand-color);
+            font-size: 0.9rem; line-height: 1.7; color: var(--text-primary);
+            margin-top: 0.75rem; white-space: pre-wrap;
+        }
+        .rec-box {
+            background: #f0fdf4; padding: 1rem; border-radius: 0.75rem;
+            border-left: 4px solid #10b981;
+            font-size: 0.88rem; line-height: 1.7; color: #065f46;
+            margin-top: 0.6rem; white-space: pre-wrap;
+        }
+        .box-label { font-size: 0.63rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin-bottom: 0.4rem; }
+        .urdu-text { font-family: 'Noto Nastaliq Urdu', serif; direction: rtl; text-align: right; line-height: 2.3; font-size: 1.05rem; }
+
+        /* Competency ratings */
+        .comp-toggle {
+            display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;
+            font-size: 0.75rem; font-weight: 700; color: var(--brand-color);
+            margin-top: 0.8rem; user-select: none; padding: 0.3rem 0;
+        }
+        .comp-toggle:hover { color: #4338ca; }
+        .comp-toggle .chevron { transition: transform 0.2s; font-size: 0.65rem; }
+        .comp-grid {
+            display: none;
+            margin-top: 0.75rem; padding: 0.75rem;
+            background: #f8fafc; border-radius: 0.6rem;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.45rem;
+        }
+        .comp-grid.open { display: grid; }
+        .comp-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; }
+        .comp-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .comp-label { color: var(--text-secondary); font-weight: 600; flex: 1; min-width: 0; }
+        .comp-val { font-weight: 700; font-size: 0.68rem; white-space: nowrap; }
+
+        /* ── PAGINATION ───────────────────────────────────────────────── */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 2rem; padding-bottom: 2rem; }
+        .page-btn { padding: 0.5rem 1.25rem; border: 1px solid var(--border-color); border-radius: 0.6rem; background: white; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--text-secondary); transition: 0.2s; }
+        .page-btn:hover:not(:disabled) { background: var(--brand-light); color: var(--brand-color); border-color: var(--brand-color); }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .page-info { font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; min-width: 100px; text-align: center; }
+
+        /* ── LOADING / EMPTY ─────────────────────────────────────────── */
+        #loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .spinner { width: 44px; height: 44px; border: 4px solid #e2e8f0; border-top: 4px solid var(--brand-color); border-radius: 50%; animation: spin 0.75s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-secondary); }
+        .empty-state i { font-size: 2.5rem; opacity: 0.3; display: block; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+
+<div id="loading-overlay"><div class="spinner"></div></div>
+
+<!-- Sidebar (populated by shared-sidebar.js) -->
+<aside id="left-sidebar">
+    <div class="sidebar-header">
+        <div class="logo-box">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2zm12-3c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2z"/>
+            </svg>
+        </div>
+        <div class="sidebar-text">DFLT DASHBOARD</div>
+    </div>
+    <nav><ul></ul></nav>
+</aside>
+
+<main id="main-wrapper">
+
+    <header style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.9rem; font-weight: 800;">Trainer Fact Report</h1>
+        <p style="color: var(--text-secondary); font-weight: 500; margin-top: 0.3rem;">Audio review observations and competency ratings from the field</p>
+    </header>
+
+    <!-- KPI Strip -->
+    <div class="kpi-strip">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#eef2ff;color:#4f46e5;"><i class="fa-solid fa-headphones"></i></div>
+            <div class="kpi-value" id="kpi-total">—</div>
+            <div class="kpi-label">Total Reviews</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#d1fae5;color:#059669;"><i class="fa-solid fa-person-chalkboard"></i></div>
+            <div class="kpi-value" id="kpi-trainers">—</div>
+            <div class="kpi-label">Unique Trainers</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#fef3c7;color:#d97706;"><i class="fa-solid fa-star"></i></div>
+            <div class="kpi-value" id="kpi-rating">—</div>
+            <div class="kpi-label">Avg Overall Rating</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#fee2e2;color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="kpi-value" id="kpi-issues">—</div>
+            <div class="kpi-label">Technical Issues</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-grid">
+        <div class="filter-group">
+            <label>Phase</label>
+            <select id="f-phase" class="filter-input"><option value="all">All Phases</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Province</label>
+            <select id="f-province" class="filter-input"><option value="all">All Provinces</option></select>
+        </div>
+        <div class="filter-group">
+            <label>District</label>
+            <select id="f-district" class="filter-input"><option value="all">All Districts</option></select>
+        </div>
+        <div class="filter-group">
+            <label>PC (Coordinator)</label>
+            <select id="f-pc" class="filter-input"><option value="all">All PCs</option></select>
+        </div>
+        <div class="filter-group">
+            <label>Overall Rating</label>
+            <select id="f-rating" class="filter-input">
+                <option value="all">All Ratings</option>
+                <option value="1_rating">★ 1 – Lowest</option>
+                <option value="2_rating">★★ 2</option>
+                <option value="3_rating">★★★ 3</option>
+                <option value="4_rating">★★★★ 4</option>
+                <option value="5_rating">★★★★★ 5 – Highest</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Date From</label>
+            <input type="date" id="f-date-from" class="filter-input">
+        </div>
+        <div class="filter-group">
+            <label>Date To</label>
+            <input type="date" id="f-date-to" class="filter-input">
+        </div>
+        <div class="filter-group">
+            <label>Search Trainer / Reviewer</label>
+            <input type="text" id="f-search" class="filter-input" placeholder="Type to search…">
+        </div>
+        <div class="filter-group" style="display:flex;align-items:flex-end;">
+            <button class="btn-reset" id="reset-btn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+        </div>
+    </div>
+
+    <!-- Results info -->
+    <div class="results-bar">
+        <div class="results-info" id="results-info">Loading…</div>
+    </div>
+
+    <!-- Timeline -->
+    <div id="timeline-container">
+        <div class="empty-state"><div class="spinner" style="margin:0 auto;"></div></div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination" style="display:none;">
+        <button class="page-btn" id="prev-btn"><i class="fa-solid fa-chevron-left"></i> Prev</button>
+        <span class="page-info" id="page-info">Page 1 of 1</span>
+        <button class="page-btn" id="next-btn">Next <i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+</main>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const LIMIT = 20;
+
+const COMPETENCIES = [
+    { key: 'explanations_clear',          label: 'Explanations Clear'     },
+    { key: 'concepts_explained',          label: 'Concepts Explained'     },
+    { key: 'messages_communicated',       label: 'Messages Communicated'  },
+    { key: 'syllabus_covered',            label: 'Syllabus Covered'       },
+    { key: 'trainer_encouraged_questions',label: 'Encouraged Questions'   },
+    { key: 'narrative_followed',          label: 'Narrative Followed'     },
+    { key: 'real_life_examples',          label: 'Real-life Examples'     },
+    { key: 'time_managed',               label: 'Time Managed'           },
+    { key: 'beneficiary_engagement',      label: 'Bene. Engagement'       },
+];
+
+let currentPage = 1;
+let filterTimeout = null;
+
+// ── Auth check ───────────────────────────────────────────────────────────────
+(async () => {
+    try {
+        const r = await fetch('/api/me');
+        if (!r.ok) throw new Error('unauthenticated');
+    } catch {
+        window.location.href = '/login.html';
+        return;
+    }
+    init();
+})();
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+function init() {
+    loadFilterOpts();
+    attachListeners();
+    loadData();
+}
+
+// ── Filter options ────────────────────────────────────────────────────────────
+async function loadFilterOpts() {
+    try {
+        const data = await fetch('/api/audio-filter-opts').then(r => r.json());
+        populateSelect('f-phase',    data.dflt_phase             || [], 'All Phases');
+        populateSelect('f-province', data.province               || [], 'All Provinces');
+        populateSelect('f-district', data.district               || [], 'All Districts');
+        populateSelect('f-pc',       data.provincial_coordinator || [], 'All PCs');
+    } catch(e) { console.error('Filter opts failed', e); }
+}
+
+function populateSelect(id, values, placeholder) {
+    const sel = document.getElementById(id);
+    sel.innerHTML = `<option value="all">${placeholder}</option>` +
+        values.map(v => `<option value="${esc(v)}">${esc(v.replace(/_/g,' '))}</option>`).join('');
+}
+
+// ── Listeners ─────────────────────────────────────────────────────────────────
+function attachListeners() {
+    ['f-phase','f-province','f-district','f-pc','f-rating','f-date-from','f-date-to','f-search'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(() => { currentPage = 1; loadData(); }, 300);
+        });
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+        ['f-phase','f-province','f-district','f-pc','f-rating'].forEach(id => document.getElementById(id).value = 'all');
+        ['f-date-from','f-date-to','f-search'].forEach(id => document.getElementById(id).value = '');
+        currentPage = 1;
+        loadData();
+    });
+
+    document.getElementById('prev-btn').addEventListener('click', () => { currentPage--; loadData(); });
+    document.getElementById('next-btn').addEventListener('click', () => { currentPage++; loadData(); });
+}
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+function buildParams() {
+    const p = new URLSearchParams();
+    const v = id => document.getElementById(id).value;
+    if (v('f-phase')    !== 'all') p.set('phase',     v('f-phase'));
+    if (v('f-province') !== 'all') p.set('province',  v('f-province'));
+    if (v('f-district') !== 'all') p.set('district',  v('f-district'));
+    if (v('f-pc')       !== 'all') p.set('pc',        v('f-pc'));
+    if (v('f-rating')   !== 'all') p.set('rating',    v('f-rating'));
+    if (v('f-date-from'))          p.set('date_from', v('f-date-from'));
+    if (v('f-date-to'))            p.set('date_to',   v('f-date-to'));
+    if (v('f-search').trim())      p.set('search',    v('f-search').trim());
+    p.set('page', currentPage);
+    p.set('limit', LIMIT);
+    return p.toString();
+}
+
+async function loadData() {
+    showLoading(true);
+    try {
+        const data = await fetch(`/api/audio-reviews?${buildParams()}`).then(r => r.json());
+        renderKPIs(data);
+        renderTimeline(data.rows || []);
+        renderPagination(data.page, data.pages, data.total, data.rows?.length || 0);
+    } catch(e) {
+        console.error('Load failed', e);
+        document.getElementById('timeline-container').innerHTML =
+            '<div class="empty-state"><i class="fa-solid fa-circle-exclamation"></i><p>Error loading data.</p></div>';
+    }
+    showLoading(false);
+}
+
+// ── KPI update ────────────────────────────────────────────────────────────────
+function renderKPIs(data) {
+    document.getElementById('kpi-total').textContent    = (data.total           || 0).toLocaleString();
+    document.getElementById('kpi-trainers').textContent = (data.unique_trainers || 0).toLocaleString();
+    document.getElementById('kpi-rating').textContent   = data.avg_rating ? data.avg_rating.toFixed(1) + '/5' : '—';
+    document.getElementById('kpi-issues').textContent   = (data.issues_count    || 0).toLocaleString();
+}
+
+// ── Timeline render ────────────────────────────────────────────────────────────
+function renderTimeline(rows) {
+    const container = document.getElementById('timeline-container');
+    if (!rows.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-circle-info"></i><p>No reviews match the selected filters.</p></div>';
+        return;
+    }
+    container.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    rows.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        item.innerHTML = buildCard(r);
+        frag.appendChild(item);
+    });
+    container.appendChild(frag);
+
+    // Attach competency toggle handlers
+    container.querySelectorAll('.comp-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const grid = btn.nextElementSibling;
+            const open = grid.classList.toggle('open');
+            btn.querySelector('.chevron').style.transform = open ? 'rotate(90deg)' : '';
+        });
+    });
+}
+
+function buildCard(r) {
+    const rn = parseInt(r.overall_rating) || 0;
+    const stars = '★'.repeat(rn) + '☆'.repeat(Math.max(0, 5 - rn));
+    const rClass = rn >= 4 ? 'badge-r4' : rn === 3 ? 'badge-r3' : 'badge-r1';
+
+    const hasTechIssue = r.any_technical_issue &&
+        !['', 'no'].includes((r.any_technical_issue || '').toLowerCase().trim());
+    const hasSkipped = r.sections_skipped &&
+        !['', 'no'].includes((r.sections_skipped || '').toLowerCase().trim());
+
+    const nameClean = (r.trainer_name || '').replace(/_/g, ' ');
+    const dur = fmtDuration(r.duration_seconds);
+
+    const isUrduObs = /[\u0600-\u06FF]/.test(r.key_observations || '');
+    const isUrduRec = /[\u0600-\u06FF]/.test(r.trainer_recommendations || '');
+
+    const compItems = COMPETENCIES.map(c => {
+        const val = r[c.key] || '';
+        const color = likertColor(val);
+        return `<div class="comp-item">
+            <div class="comp-dot" style="background:${color}"></div>
+            <span class="comp-label">${c.label}</span>
+            <span class="comp-val" style="color:${color}">${likertLabel(val)}</span>
+        </div>`;
+    }).join('');
+
+    return `
+    <div class="timeline-dot"></div>
+    <div class="timeline-card">
+        <div class="card-header">
+            <div class="card-badges">
+                <span class="badge badge-date"><i class="fa-regular fa-calendar"></i> ${esc(r.review_date || '—')}</span>
+                ${r.dflt_phase ? `<span class="badge badge-phase">${esc(r.dflt_phase.replace(/_/g,' '))}</span>` : ''}
+                ${rn > 0 ? `<span class="badge ${rClass}">${stars} ${rn}/5</span>` : ''}
+            </div>
+            <div class="card-badges">
+                ${r.provincial_coordinator ? `<span class="badge badge-pc"><i class="fa-solid fa-user-tie"></i> ${esc(r.provincial_coordinator.replace(/_/g,' '))}</span>` : ''}
+            </div>
+        </div>
+
+        <div>
+            <div class="trainer-name">${esc(nameClean)}</div>
+            <div class="reviewer-meta">
+                <span><i class="fa-solid fa-user-check"></i> ${esc(r.Audio_reviewer_name || '—')}</span>
+                <span><i class="fa-solid fa-clock"></i> ${esc(dur)}</span>
+                <span><i class="fa-solid fa-location-dot"></i> ${esc(r.district || '—')}${r.province ? ', ' + esc(r.province) : ''}</span>
+                ${r.team_lead ? `<span><i class="fa-solid fa-users"></i> TL: ${esc(r.team_lead.replace(/_/g,' '))}</span>` : ''}
+            </div>
+            <div class="alert-row">
+                ${hasTechIssue ? `<span class="badge badge-issue"><i class="fa-solid fa-triangle-exclamation"></i> Issue: ${esc(r.any_technical_issue)}</span>` : ''}
+                ${hasSkipped   ? `<span class="badge badge-skipped"><i class="fa-solid fa-scissors"></i> Sections skipped</span>` : ''}
+            </div>
+        </div>
+
+        ${r.key_observations ? `
+        <div class="obs-box ${isUrduObs ? 'urdu-text' : ''}">
+            <div class="box-label" style="${isUrduObs ? 'direction:ltr;text-align:left;' : ''}">Key Observations</div>${esc(r.key_observations)}
+        </div>` : ''}
+
+        ${r.trainer_recommendations ? `
+        <div class="rec-box ${isUrduRec ? 'urdu-text' : ''}">
+            <div class="box-label" style="color:#065f46;${isUrduRec ? 'direction:ltr;text-align:left;' : ''}">Recommendations</div>${esc(r.trainer_recommendations)}
+        </div>` : ''}
+
+        <div class="comp-toggle">
+            <i class="fa-solid fa-chevron-right chevron"></i> Show Competency Ratings
+        </div>
+        <div class="comp-grid">${compItems}</div>
+    </div>`;
+}
+
+// ── Pagination ─────────────────────────────────────────────────────────────────
+function renderPagination(page, pages, total, rowCount) {
+    const pag = document.getElementById('pagination');
+    if (pages <= 1) { pag.style.display = 'none'; } else { pag.style.display = 'flex'; }
+    document.getElementById('page-info').textContent = `Page ${page} of ${pages}`;
+    document.getElementById('prev-btn').disabled = page <= 1;
+    document.getElementById('next-btn').disabled = page >= pages;
+
+    const start = (page - 1) * LIMIT + 1;
+    const end   = Math.min(start + rowCount - 1, total);
+    document.getElementById('results-info').innerHTML =
+        `Showing <strong>${start.toLocaleString()}–${end.toLocaleString()}</strong> of <strong>${total.toLocaleString()}</strong> reviews`;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function showLoading(on) {
+    document.getElementById('loading-overlay').style.display = on ? 'flex' : 'none';
+}
+
+function esc(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDuration(seconds) {
+    const s = parseInt(seconds) || 0;
+    if (!s) return '—';
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function likertToNum(val) {
+    const map = { strongly_agree:5, agree:4, neither:3, disagree:2, strongly_disagree:1 };
+    return map[(val || '').toLowerCase().trim()] || 0;
+}
+
+function likertLabel(val) {
+    const map = {
+        strongly_agree:'Strongly Agree', agree:'Agree', neither:'Neither',
+        disagree:'Disagree', strongly_disagree:'Strongly Disagree'
+    };
+    const key = (val || '').toLowerCase().trim();
+    return map[key] || (val ? val.replace(/_/g,' ') : 'N/A');
+}
+
+function likertColor(val) {
+    const n = likertToNum(val);
+    if (n === 5) return '#10b981';
+    if (n === 4) return '#22c55e';
+    if (n === 3) return '#eab308';
+    if (n === 2) return '#f97316';
+    if (n === 1) return '#ef4444';
+    return '#94a3b8';
+}
+</script>
+
+<script src="assets/js/shared-sidebar.js"></script>
+</body>
+</html>
+</body>
+</html>

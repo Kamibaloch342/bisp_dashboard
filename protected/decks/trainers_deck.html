@@ -1,0 +1,1833 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFLT Trainer Profile Deck</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color:        #f0f4f8;
+            --card-bg:         #ffffff;
+            --border-color:    #e2e8f0;
+            --text-primary:    #1e293b;
+            --text-secondary:  #64748b;
+            --brand-color:     #4f46e5;
+            --brand-light:     #e0e7ff;
+            --current-color:   #6366f1;
+            --target-color:    #8b5cf6;
+            --benefits-color:  #10b981;
+            --trainings-color: #f59e0b;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-color);
+            background-image: linear-gradient(175deg, var(--bg-color) 0%, #dbe7f2 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        #app-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .card {
+            background-color: rgba(255,255,255,0.92);
+            backdrop-filter: blur(10px);
+            border-radius: 1.5rem;
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+            transform: translateY(-4px);
+        }
+
+        h1, h2, h3, h4, p, span, div, label, select, button, table, th, td, input {
+            font-family: 'Montserrat', sans-serif !important;
+        }
+
+        @keyframes fadeIn  { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
+        @keyframes fadeOut { from {opacity:1; transform:translateY(0);}   to {opacity:0; transform:translateY(20px);} }
+
+        .fade-in  { animation: fadeIn  0.4s ease-out forwards; }
+        .fade-out { animation: fadeOut 0.3s ease-in  forwards; }
+
+        .table-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 72vh;
+        }
+
+        .table-container thead {
+            background-color: #f3f4f6;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .table-container th {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .table-container th:hover {
+            background-color: #e5e7eb;
+        }
+
+        .clickable-name {
+            font-weight: 600;
+            color: var(--brand-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clickable-name:hover {
+            text-decoration: underline;
+            color: #4338ca;
+        }
+
+        /* Stat Cards */
+        .stat-card {
+            padding: 1.5rem 1.25rem;
+            border-radius: 1.25rem;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            background: white;
+            box-shadow: 0 4px 15px -2px rgba(0,0,0,0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+        }
+
+        .stat-card.current::before   { background: linear-gradient(to bottom, var(--current-color), #818cf8); }
+        .stat-card.target::before    { background: linear-gradient(to bottom, var(--target-color), #a78bfa); }
+        .stat-card.benefits::before  { background: linear-gradient(to bottom, var(--benefits-color), #34d399); }
+        .stat-card.trainings::before { background: linear-gradient(to bottom, var(--trainings-color), #fbbf24); }
+
+        .stat-card .stat-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.025em;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2.75rem;
+            font-weight: 800;
+            line-height: 1;
+            color: #1e293b;
+        }
+
+        .stat-card .stat-sub {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+
+        .progress-bar {
+            background-color: #e0e7ff;
+            border-radius: 9999px;
+            height: 10px;
+            width: 100%;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-bar-inner {
+            background-color: var(--brand-color);
+            height: 100%;
+            width: 0%;
+            border-radius: 9999px;
+            transition: width 0.6s ease-out;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 1.25rem;
+            border: none;
+            background: none;
+            padding: 0;
+        }
+
+        .back-button:hover { color: var(--brand-color); }
+
+        .btn {
+            padding: 0.6rem 1.25rem;
+            border-radius: 9999px;
+            background-color: var(--brand-color);
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(67, 56, 202, 0.12);
+        }
+
+        .btn:hover {
+            background-color: #4338ca;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 12px rgba(67, 56, 202, 0.22);
+        }
+
+        .btn.secondary {
+            background-color: #e0e7ff;
+            color: var(--brand-color);
+        }
+
+        .btn.secondary:hover {
+            background-color: #c7d2fe;
+        }
+
+        .btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            background-color: #9ca3af !important;
+        }
+
+        /* ─── Sidebar – collapsed + hover expand on desktop ──────────────────────── */
+        #left-sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            width: 76px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.04);
+            transition: width 0.35s ease;
+            overflow: hidden;
+            z-index: 50;
+        }
+
+        #left-sidebar .sidebar-content {
+            opacity: 0;
+            transition: opacity 0.25s ease 0.08s;
+        }
+
+        #left-sidebar:hover {
+            width: 280px;
+        }
+
+        #left-sidebar:hover .sidebar-content {
+            opacity: 1;
+        }
+
+        #left-sidebar h2,
+        #left-sidebar nav a span {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+        }
+
+        #left-sidebar:hover h2,
+        #left-sidebar:hover nav a span {
+            opacity: 1;
+        }
+
+        #left-sidebar .p-5 {
+            padding: 1.25rem 0.9rem;
+        }
+
+        #left-sidebar:hover .p-5 {
+            padding: 1.25rem 1.25rem;
+        }
+
+        /* Mobile behavior */
+        @media (max-width: 1023px) {
+            #left-sidebar {
+                transform: translateX(-100%);
+                width: 280px !important;
+            }
+            #left-sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            #left-sidebar,
+            #left-sidebar:hover {
+                width: 280px !important;
+            }
+            #left-sidebar .sidebar-content,
+            #left-sidebar h2,
+            #left-sidebar nav a span {
+                opacity: 1 !important;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            #page-container {
+                margin-left: 76px;
+            }
+            #left-sidebar:hover ~ #page-container {
+                margin-left: 280px;
+            }
+            .sidebar-hover-trigger,
+            #mobile-menu-btn,
+            #close-sidebar-btn {
+                display: none !important;
+            }
+        }
+
+        .group-header {
+            text-align: center;
+            font-weight: 700;
+            background-color: #e5e7eb;
+            border-bottom: 2px solid #d1d5db;
+        }
+
+        th.sub-header {
+            font-weight: 600;
+            font-size: 0.775rem;
+            text-align: center;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .locked-section {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 1rem;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body class="antialiased">
+<!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-95 flex items-center justify-center z-50 transition-opacity duration-300">
+        <div class="spinner w-14 h-14 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Mobile Menu Button -->
+    <button id="mobile-menu-btn" class="lg:hidden fixed top-4 left-4 z-50 bg-white p-2.5 rounded-xl shadow-md">
+        <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+
+    <div class="flex min-h-screen">
+
+        <!-- Sidebar -->
+        <aside id="left-sidebar">
+            <div class="sidebar-content">
+                <div class="p-5 border-b flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-indigo-600">Dashboard Decks</h2>
+                    <button id="close-sidebar-btn" class="lg:hidden text-gray-700">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <nav class="p-4">
+                <ul class="space-y-2" id="sidebar-nav">
+                    <li>
+                        <a href="../index.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            <span class="ml-3">DFLT Status Deck</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/Benefeciary_status_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <span class="ml-3">Beneficiary Status</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/beneficiary_data_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h18M3 18h18"/></svg>
+                            <span class="ml-3">Beneficiary Data</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/DFLT_2_Soft_launch_Map.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                            <span class="ml-3">DFLT Mapping</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/Trainings_Locations_Viewers.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">DFLT Session</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/trainers_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 bg-indigo-100 text-indigo-700 font-semibold">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            <span class="ml-3">Trainers Progress</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/ic_data_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                            <span class="ml-3">IC Monitoring Deck</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/GRM Table.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">GRM Analytics Table</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/duration_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="ml-3">Duration Analysis</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/trainer_report.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="ml-3">Trainer Report Deck</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT-Target Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                            <span class="ml-3">Target Achievement</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT_Visuals_Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                            <span class="ml-3">DFLT Visuals Deck</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT Pre-Post.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            <span class="ml-3">DFLT Pre Post</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+                <div id="error-message" class="hidden mt-6 mx-5 p-4 bg-red-50 text-red-700 border border-red-200 rounded-xl">
+                    <strong>Error:</strong> <p id="error-text"></p>
+                </div>
+            </div>
+        </aside>
+
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-40 z-40 hidden lg:hidden"></div>
+
+        <main id="page-container" class="flex-1 p-6 md:p-8 lg:p-10 overflow-y-auto">
+
+            <!-- Login Overlay -->
+            <div id="login-container" class="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50">
+                <div class="card p-8 w-full max-w-md">
+                    <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Login Required</h2>
+                    <form id="login-form">
+                        <div class="mb-5">
+                            <label for="username" class="block text-sm font-medium mb-2 text-gray-700">Username</label>
+                            <input type="text" id="username" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div class="mb-6 relative">
+                            <label for="password" class="block text-sm font-medium mb-2 text-gray-700">Password</label>
+                            <input type="password" id="password" required class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <button type="button" id="toggle-password" class="absolute inset-y-0 right-4 flex items-center text-gray-500 hover:text-gray-700">
+                                <!-- eye icon -->
+                            </button>
+                        </div>
+                        <button type="submit" class="w-full btn text-lg py-3">Login</button>
+                    </form>
+                    <p id="login-error" class="text-red-600 text-sm text-center mt-5 hidden">Invalid username or password.</p>
+                </div>
+            </div>
+
+            <div id="app-container" style="display: none;">
+
+                <header class="card mb-8">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                        <div class="flex items-center gap-5">
+                            <img src="https://www.sdpi.org/assets/images/sdpi-logo-2020.webp" alt="SDPI Logo" class="h-14 w-auto">
+                            <h1 class="text-3xl font-extrabold text-gray-900">DFLT Trainer Profile Deck</h1>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+                            <div class="relative w-full sm:w-64">
+                                <input type="text" id="search-box" placeholder="Search trainers..." class="w-full pl-11 pr-5 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                                </svg>
+                            </div>
+
+                            <div class="relative w-full sm:w-56">
+                                <select id="month-filter" class="w-full px-5 py-3 pr-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white">
+                                    <option value="all">All Months</option>
+                                    <option value="current" selected>Current Month</option>
+                                    <option value="before-jan8">Before 8 Jan</option>
+                                    <option value="after-jan8">After 8 Jan</option>
+                                </select>
+                            </div>
+
+                            <div class="relative w-full sm:w-72">
+                                <select id="pc-filter" class="w-full px-5 py-3 pr-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white">
+                                    <option value="all">All Provincial Coordinators</option>
+                                </select>
+                            </div>
+                            <!-- ── New filters ── -->
+                        <div class="relative w-full sm:w-56">
+                            <select id="zone-filter" class="w-full px-5 py-3 pr-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white">
+                                <option value="all">All Zones</option>
+                            </select>
+                        </div>
+
+                        <div class="relative w-full sm:w-56">
+                            <select id="phase-filter" class="w-full px-5 py-3 pr-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white">
+                                <option value="all">All Phases</option>
+                            </select>
+                        </div>
+
+                        </div>
+                    </div>
+                </header>
+
+                <div id="message-container" class="text-center py-12">
+                    <p id="message-text" class="text-xl text-gray-600">Loading trainer data...</p>
+                </div>
+
+                <div id="trainer-profile-view" style="display: none;"></div>
+
+                <div id="trainer-list-view" class="card" style="display: none;">
+                    <h2 id="list-title" class="text-2xl font-bold text-gray-800 mb-6">Trainer Performance Overview</h2>
+                    <div class="table-container">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th class="px-6 py-4" rowspan="2" data-sort="name">Trainer / Pair Name</th>
+                                    <th class="px-6 py-4" rowspan="2" data-sort="province">Province</th>
+                                    <th class="px-6 py-4" rowspan="2" data-sort="district">District</th>
+                                    <th class="px-6 py-4" rowspan="2" data-sort="duty_station">Duty Station</th>
+                                    <th class="px-6 py-4" rowspan="2" data-sort="pc">PC</th>
+
+                                    <th colspan="3" class="group-header px-3 py-3">Current Month</th>
+                                    <th colspan="3" class="group-header px-3 py-3">All Months</th>
+                                </tr>
+                                <tr>
+                                    <th class="sub-header" data-sort="currentRegistered">Bene Regs</th>
+                                    <th class="sub-header" data-sort="currentProclaimed">Proclaimed Ret.</th>
+                                    <th class="sub-header" data-sort="currentVerified">Verified Ret.</th>
+                                    <th class="sub-header" data-sort="totalRegistered">Bene Regs</th>
+                                    <th class="sub-header" data-sort="totalProclaimed">Proclaimed Ret.</th>
+                                    <th class="sub-header" data-sort="totalVerified">Verified Ret.</th>
+
+                                </tr>
+                            </thead>
+                            <tbody id="trainer-list-tbody" class="divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+// ────────────────────────────────────────────────────────────────────────────────
+//   DFLT Trainer Profile Deck – with pair-aware monthly trend
+// ────────────────────────────────────────────────────────────────────────────────
+
+const CUTOFF_DATE = new Date(2026, 0, 8);   // 8 January 2026
+
+let allTrainers = [];
+let allPrepost = [];
+let sortState = { column: 'currentRegistered', order: 'desc' };
+
+let elements = {};
+let currentUser = null;
+let selectedMonth = 'current';
+let selectedPC = 'all';
+let currentTrainerKey = null;
+
+let chartInstance = null;
+let durationChartInstance = null;
+let prepostChartInstance = null;
+
+// ─── DOM Ready ──────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+    elements = {
+        appContainer: document.getElementById('app-container'),
+        messageContainer: document.getElementById('message-container'),
+        messageText: document.getElementById('message-text'),
+        searchBox: document.getElementById('search-box'),
+        profileView: document.getElementById('trainer-profile-view'),
+        listView: document.getElementById('trainer-list-view'),
+        listTbody: document.getElementById('trainer-list-tbody')
+    };
+
+    setupMobileSidebar();
+
+    if (sessionStorage.getItem('isVerified') === 'true') {
+        currentUser = sessionStorage.getItem('username') || '';
+        document.getElementById('login-container').style.display = 'none';
+        elements.appContainer.style.display = 'block';
+        if (!window.appInitialized) {
+            initApp();
+            window.appInitialized = true;
+        }
+    } else {
+        window.location.href = '/login.html';
+    }
+});
+
+// ─── Mobile Sidebar ─────────────────────────────────────────────────────────────
+
+function setupMobileSidebar() {
+    document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+        document.getElementById('left-sidebar').classList.toggle('mobile-open');
+        document.getElementById('sidebar-overlay').classList.toggle('hidden');
+    });
+
+    document.getElementById('close-sidebar-btn')?.addEventListener('click', closeMobileSidebar);
+    document.getElementById('sidebar-overlay')?.addEventListener('click', closeMobileSidebar);
+}
+
+function closeMobileSidebar() {
+    document.getElementById('left-sidebar').classList.remove('mobile-open');
+    document.getElementById('sidebar-overlay').classList.add('hidden');
+}
+
+// ─── Database & Init ────────────────────────────────────────────────────────────
+
+async function initApp() {
+    try {
+        await loadData();
+        populateMonthFilter();
+        populatePCFilter();
+        populateZoneFilter();   // ← new
+        populatePhaseFilter();  // ← new
+        setupEventListeners();
+        renderView('list');
+    } catch (err) {
+        console.error("[INIT ERROR]", err);
+        document.getElementById('error-text').textContent = err.message;
+        document.getElementById('error-message').classList.remove('hidden');
+    } finally {
+        const ov = document.getElementById('loading-overlay');
+        ov.style.opacity = '0';
+        setTimeout(() => ov.style.display = 'none', 400);
+    }
+}
+
+// ─── Data Loading ───────────────────────────────────────────────────────────────
+
+async function loadData() {
+    const [rawTrainers, bens, prepost1, prepost2] = await Promise.all([
+        fetch('/api/trainers').then(r => r.json()),
+        fetch('/api/bene-data').then(r => r.json()),
+        fetch('/api/prepost-day1').then(r => r.json()),
+        fetch('/api/prepost-day2').then(r => r.json())
+    ]);
+    allPrepost = [...prepost1, ...prepost2];
+
+    // Remap API column names to the expected property names
+    const trainers = rawTrainers.map(t => ({
+        name: t.trainer_name,
+        cnic: t.trainer_cnic,
+        ph_number: t.trainer_ph_number
+    }));
+
+    console.log("Total trainers in DB:", trainers.length);
+    console.log("Sample trainer names:", trainers.slice(0,6).map(t => t.name?.trim() || '(empty)'));
+
+    const trainerInfoMap = new Map(trainers.map(t => [t.name?.trim(), t]));
+
+    // We will group beneficiaries by trainer/pair key
+    const dataMap = new Map();
+
+    bens.forEach(row => {
+        if (!row.beneficiary_cnic?.trim()) return;
+        const trainerName = (row.trainer_name || '').trim();
+        if (!trainerName) return;
+
+        const pairName = (row.pair || '').trim();
+        const isPair = pairName && pairName !== '(Solo)' && pairName !== trainerName;
+        const key = isPair ? [trainerName, pairName].sort().join('&') : trainerName;
+
+        if (!dataMap.has(key)) {
+            const entry = createEmptyTrainerEntry(key, trainerName, isPair, pairName, trainerInfoMap);
+            dataMap.set(key, entry);
+        }
+
+        const entry = dataMap.get(key);
+        entry.allBeneficiaries.push(row);
+
+        // add locations, pcs, dates...
+        if (row.province) entry.provinces.add(row.province);
+        if (row.district) entry.districts.add(row.district);
+        if (row.tehsil)   entry.tehsils.add(row.tehsil);
+        if (row.duty_station) entry.dutyStations.add(row.duty_station);
+        if (row.provincial_coordinator) entry.pcs.add(row.provincial_coordinator);
+
+        const sd = parseDate(row.starttime);
+        if (sd) {
+            if (!entry.firstTraining || sd < entry.firstTraining) entry.firstTraining = sd;
+            if (!entry.lastTraining  || sd > entry.lastTraining)  entry.lastTraining  = sd;
+        }
+    });
+
+    // Now add trainers who have ZERO beneficiaries
+    trainers.forEach(t => {
+        const name = t.name?.trim();
+        if (!name) return;
+
+        // Check if this trainer (or their pair) is already in dataMap
+        let found = false;
+        for (const entry of dataMap.values()) {
+            if (entry.name.includes(name)) {
+                found = true;
+                break;
+            }
+        }
+
+      
+    });
+
+    allTrainers = [...dataMap.values()].map(t => ({
+        ...t,
+        provincesStr: [...t.provinces].join(', ') || '—',
+        districtsStr: [...t.districts].join(', ') || '—',
+        tehsilsStr:   [...t.tehsils].join(', ')   || '—',
+        dutyStationsStr: [...t.dutyStations].join(', ') || '—',
+        pcListStr:    [...t.pcs].join(', ')       || '—',
+        trainingsCount: countTrainingDays(t.allBeneficiaries)
+    }));
+
+    console.log("Final displayed trainers (including zero-activity):", allTrainers.length);
+}
+// ─── Helpers ────────────────────────────────────────────────────────────────────
+
+function createEmptyTrainerEntry(key, trainerName, isPair, pairName, trainerInfoMap) {
+    const entry = {
+        key,
+        name: isPair 
+            ? key.replace(/_/g,' ').replace(/&/g,' & ') 
+            : trainerName.replace(/_/g,' '),
+        isPair,
+        allBeneficiaries: [],
+        provinces: new Set(),
+        districts: new Set(),
+        tehsils: new Set(),
+        dutyStations: new Set(),
+        pcs: new Set(),
+        firstTraining: null,
+        lastTraining: null,
+        members: isPair ? new Map() : null
+    };
+
+    if (isPair && pairName) {
+        const t1 = trainerInfoMap.get(trainerName) || {cnic:'N/A', ph_number:'N/A'};
+        const t2 = trainerInfoMap.get(pairName)   || {cnic:'N/A', ph_number:'N/A'};
+        entry.members.set(trainerName.replace(/_/g,' '), t1);
+        entry.members.set(pairName.replace(/_/g,' '),   t2);
+    } else {
+        const info = trainerInfoMap.get(trainerName) || {cnic:'N/A', ph_number:'N/A'};
+        entry.cnic = info.cnic;
+        entry.ph_number = info.ph_number;
+    }
+
+    return entry;
+}
+
+
+function parseDate(d) {
+    if (!d) return null;
+    let dt = new Date(d);
+    if (!isNaN(dt.getTime())) return dt;
+
+    const m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return new Date(m[3], m[1]-1, m[2]);
+
+    if (/^\d{5}$/.test(d)) return new Date((parseInt(d)-25569)*86400000);
+    return null;
+}
+
+function countTrainingDays(bens) {
+    const dayCounts = new Map();
+    bens.forEach(b => {
+        let dateStr = b.starttime?.split(' ')[0] || b.starttime?.split(' ')[0];
+        if (dateStr) dayCounts.set(dateStr, (dayCounts.get(dateStr) || 0) + 1);
+    });
+    return [...dayCounts.values()].filter(c => c >= 5).length;
+}
+
+function calculateMinutes(start, end) {
+    if (!start || !end) return null;
+    try {
+        const s = new Date(start.replace(' ', 'T'));
+        const e = new Date(end.replace(' ', 'T'));
+        if (isNaN(s) || isNaN(e) || e <= s) return null;
+        return (e - s) / 60000;
+    } catch { return null; }
+}
+
+function computeDurationStats(bens) {
+    const buckets = { '1-1.5': 0, '1.5-2': 0, '2-4': 0, '4+': 0 };
+    let total = 0;
+    bens.forEach(b => {
+        const min = calculateMinutes(b.starttime, b.endtime);
+        if (min === null) return;
+        total++;
+        if      (min <= 1.5) buckets['1-1.5']++;
+        else if (min <= 2)   buckets['1.5-2']++;
+        else if (min <= 4)   buckets['2-4']++;
+        else                 buckets['4+']++;
+    });
+    const pct = (count) => total ? ((count / total) * 100).toFixed(1) : '0.0';
+    return { total, buckets, pct: {
+        '1-1.5': pct(buckets['1-1.5']),
+        '1.5-2': pct(buckets['1.5-2']),
+        '2-4':   pct(buckets['2-4']),
+        '4+':    pct(buckets['4+'])
+    }};
+}
+
+function getTrainerPrepost(trainer) {
+    const normalize = s => (s || '').trim().replace(/_/g, ' ').toLowerCase();
+    let names;
+    if (trainer.isPair && trainer.members) {
+        names = [...trainer.members.keys()].map(n => normalize(n));
+    } else {
+        names = [normalize(trainer.key)];
+    }
+    return allPrepost.filter(r => names.includes(normalize(r.trainer_name)));
+}
+
+function getRetentionStats(trainer, month = 'all') {
+    let bens = trainer.allBeneficiaries;
+
+    if (month === 'before-jan8-2026') {
+        bens = bens.filter(b => {
+            const d = parseDate(b.starttime);
+            return d && d < CUTOFF_DATE;
+        });
+    } else if (month === 'after-jan8-2026') {
+        bens = bens.filter(b => {
+            const d = parseDate(b.starttime);
+            return d && d >= CUTOFF_DATE;
+        });
+    } else if (month !== 'all') {
+        const targetYM = month === 'current' ? new Date().toISOString().slice(0,7) : month;
+        bens = bens.filter(b => parseDate(b.starttime)?.toISOString().slice(0,7) === targetYM);
+    }
+
+    const total = bens.length;
+    const proclaimed = bens.filter(b => parseInt(b.attendance_status) === 1).length;
+    const verified   = bens.filter(b => b.verified_retention_status === 'Verified').length;
+    const notVerified = bens.filter(b => b.verified_retention_status === 'Not Verified').length;
+    const pending    = bens.filter(b => !b.verified_retention_status || b.verified_retention_status.trim() === '').length;
+
+    return {
+        registered: total,
+        proclaimed: proclaimed,
+        verified,
+        notVerified,
+        pending,
+        proclaimedStr: `${proclaimed} (${total ? Math.round(proclaimed/total*100) : 0}%)`,
+        verifiedStr:   `${verified} (${total ? Math.round(verified/total*100) : 0}%)`,
+        notVerifiedStr: `${notVerified} (${total ? Math.round(notVerified/total*100) : 0}%)`,
+        pendingStr:    `${pending} (${total ? Math.round(pending/total*100) : 0}%)`,
+        verifiedPct:   total ? Math.round(verified / total * 100) : 0
+    };
+}
+// ────────────────────────────────────────
+//   Monthly trend – now supports pair mode
+// ────────────────────────────────────────
+
+function getMonthlyTrendData(trainer) {
+    if (!trainer.isPair) {
+        const monthMap = new Map();
+
+        trainer.allBeneficiaries.forEach(b => {
+            const ym = parseDate(b.starttime)?.toISOString().slice(0,7);
+            if (!ym) return;
+
+            if (!monthMap.has(ym)) {
+                monthMap.set(ym, { reg: 0, proc: 0, ver: 0, notVer: 0, pend: 0 });
+            }
+            const m = monthMap.get(ym);
+
+            m.reg++;  // total registrations that month
+
+            const isPresent = parseInt(b.attendance_status) === 1;
+
+            if (isPresent) {
+                m.proc++;  // proclaimed / present
+
+                const vstatus = b.verified_retention_status?.trim?.() || '';
+
+                if (vstatus === 'Verified') {
+                    m.ver++;
+                } else if (vstatus === 'Not Verified') {
+                    m.notVer++;
+                } else {
+                    // Only count as pending if actually present + no decision yet
+                    m.pend++;
+                }
+            }
+            // else → absent → doesn't contribute to proc/ver/notver/pend
+        });
+
+        return [{
+            trainerName: trainer.name,
+            data: [...monthMap.entries()]
+                .map(([ym, stats]) => {
+                    const reg = stats.reg;
+                    const proc = stats.proc;
+                    return {
+                        ym,
+                        label: new Date(ym + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                        registered: reg,
+                        proclaimed: proc,
+                        verified: stats.ver,
+                        notVerified: stats.notVer,
+                        pending: stats.pend,
+                        procPct: reg ? Math.round(proc / reg * 100) : 0,
+                        verPct: proc ? Math.round(stats.ver / proc * 100) : 0,
+                        notVerPct: proc ? Math.round(stats.notVer / proc * 100) : 0,
+                        pendingPct: proc ? Math.round(stats.pend / proc * 100) : 0
+                    };
+                })
+                .sort((a,b) => b.ym.localeCompare(a.ym))
+        }];
+    }
+
+    // ── Pair mode ───────────────────────────────────────────────────────────────
+    const trainers = [...trainer.members.keys()];
+    const [name1, name2] = trainers;
+
+    const map1 = new Map();
+    const map2 = new Map();
+
+    trainer.allBeneficiaries.forEach(b => {
+        const ym = parseDate(b.starttime)?.toISOString().slice(0,7);
+        if (!ym) return;
+
+        const trainerField = b.trainer_name?.trim().replace(/_/g, ' ');
+        if (!trainerField) return;
+
+        const targetMap = (trainerField === name1) ? map1 :
+                          (trainerField === name2) ? map2 : null;
+        if (!targetMap) return;
+
+        if (!targetMap.has(ym)) {
+            targetMap.set(ym, { reg: 0, proc: 0, ver: 0, notVer: 0, pend: 0 });
+        }
+        const m = targetMap.get(ym);
+
+        m.reg++;
+
+        const isPresent = parseInt(b.attendance_status) === 1;
+
+        if (isPresent) {
+            m.proc++;
+
+            const vstatus = b.verified_retention_status?.trim?.() || '';
+
+            if (vstatus === 'Verified') {
+                m.ver++;
+            } else if (vstatus === 'Not Verified') {
+                m.notVer++;
+            } else {
+                m.pend++;
+            }
+        }
+    });
+
+    const result = [];
+
+    [ {name: name1, map: map1}, {name: name2, map: map2} ].forEach(({name, map}) => {
+        const data = [...map.entries()]
+            .map(([ym, stats]) => {
+                const reg = stats.reg;
+                const proc = stats.proc;
+                return {
+                    ym,
+                    label: new Date(ym + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                    registered: reg,
+                    proclaimed: proc,
+                    verified: stats.ver,
+                    notVerified: stats.notVer,
+                    pending: stats.pend,
+                    procPct: reg ? Math.round(proc / reg * 100) : 0,
+                    verPct: proc ? Math.round(stats.ver / proc * 100) : 0,
+                    notVerPct: proc ? Math.round(stats.notVer / proc * 100) : 0,
+                    pendingPct: proc ? Math.round(stats.pend / proc * 100) : 0
+                };
+            })
+            .sort((a,b) => b.ym.localeCompare(a.ym));
+
+        if (data.length > 0) {
+            result.push({ trainerName: name, data });
+        }
+    });
+
+    return result;
+}
+
+// ─── Filters ────────────────────────────────────────────────────────────────────
+
+function populateMonthFilter() {
+    const months = new Set();
+    allTrainers.flatMap(t => t.allBeneficiaries).forEach(r => {
+        const ym = parseDate(r.starttime)?.toISOString().slice(0,7);
+        if (ym) months.add(ym);
+    });
+
+    const select = document.getElementById('month-filter');
+    select.innerHTML = `
+        <option value="all">All Months</option>
+        <option value="current" selected>Current Month</option>
+        <option value="before-jan8-2026">Before 8 Jan 2026</option>
+        <option value="after-jan8-2026">8 Jan 2026 and after</option>
+    `;
+
+    [...months].sort().reverse().forEach(ym => {
+        const d = new Date(ym + '-01');
+        select.appendChild(new Option(d.toLocaleDateString('en-US', {month:'short', year:'numeric'}), ym));
+    });
+}
+
+function populatePCFilter() {
+    const pcs = new Set();
+    allTrainers.forEach(t => t.pcs.forEach(p => pcs.add(p)));
+
+    const select = document.getElementById('pc-filter');
+    [...pcs].sort().forEach(p => select.appendChild(new Option(p, p)));
+}
+
+// ─── New filter population functions ──────────────────────────────────────────
+function populateZoneFilter() {
+    const zones = new Set();
+    allTrainers.flatMap(t => t.allBeneficiaries).forEach(b => {
+        if (b.zones) zones.add(b.zones.trim());
+    });
+
+    const select = document.getElementById('zone-filter');
+    [...zones].sort().forEach(z => {
+        select.appendChild(new Option(z, z));
+    });
+}
+
+function populatePhaseFilter() {
+    const phases = new Set();
+    allTrainers.flatMap(t => t.allBeneficiaries).forEach(b => {
+        if (b.dflt_phase) phases.add(b.dflt_phase.trim());
+    });
+
+    const select = document.getElementById('phase-filter');
+    [...phases].sort().forEach(p => {
+        select.appendChild(new Option(p, p));
+    });
+}
+
+
+
+// ─── Event Listeners ────────────────────────────────────────────────────────────
+
+function setupEventListeners() {
+    elements.searchBox?.addEventListener('input', () => renderView('list'));
+
+    ['month-filter', 'pc-filter', 'zone-filter', 'phase-filter'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            selectedMonth = document.getElementById('month-filter').value;
+            selectedPC    = document.getElementById('pc-filter').value;
+            // you can also store selectedZone & selectedPhase if needed later
+            if (elements.profileView.style.display === 'block' && currentTrainerKey) {
+                renderView('profile', currentTrainerKey);
+            } else {
+                renderView('list');
+            }
+        });
+    });
+
+    document.querySelectorAll('#trainer-list-view th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+            const col = th.dataset.sort;
+            let order = 'desc';
+            if (sortState.column === col && sortState.order === 'desc') order = 'asc';
+            sortState = { column: col, order };
+            document.querySelectorAll('th[data-sort]').forEach(h => h.classList.remove('active'));
+            th.classList.add('active');
+            renderView('list');
+        });
+    });
+
+    elements.listTbody?.addEventListener('click', e => {
+        const cell = e.target.closest('.clickable-name');
+        if (cell) {
+            const key = cell.dataset.key;
+            if (key) renderView('profile', key);
+        }
+    });
+
+    elements.profileView?.addEventListener('click', e => {
+        if (e.target.closest('#back-to-list')) {
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+            if (durationChartInstance) {
+                durationChartInstance.destroy();
+                durationChartInstance = null;
+            }
+            if (prepostChartInstance) {
+                prepostChartInstance.destroy();
+                prepostChartInstance = null;
+            }
+            currentTrainerKey = null;
+            renderView('list');
+            return;
+        }
+
+        if (e.target.id === 'show-beneficiary-table') {
+            document.getElementById('beneficiary-prompt')?.style.setProperty('display', 'none');
+            document.getElementById('beneficiary-table-container')?.style.setProperty('display', 'block');
+            showBeneficiaryTable(currentTrainerKey);
+        }
+
+        if (e.target.id === 'hide-beneficiary-table') {
+            document.getElementById('beneficiary-prompt')?.style.setProperty('display', 'flex');
+            document.getElementById('beneficiary-table-container')?.style.setProperty('display', 'none');
+        }
+
+        if (e.target.id === 'export-csv-btn') {
+            if (['drfareeha','azmat','anam@sdpi.org','kamran@sdpi.org','iffat@sdpi.org'].includes(currentUser)) {
+                exportBeneficiariesCsv(currentTrainerKey);
+            } else {
+                alert("Export restricted to authorized users only.");
+            }
+        }
+    });
+}
+
+// ─── Rendering ──────────────────────────────────────────────────────────────────
+
+function renderView(view = 'list', key = null) {
+    if (view === 'profile') {
+        currentTrainerKey = key;
+        const trainer = allTrainers.find(t => t.key === key);
+        if (!trainer) {
+            elements.profileView.innerHTML = '<div class="card p-10 text-center text-red-600">Trainer not found</div>';
+        } else {
+            renderTrainerProfile(trainer);
+        }
+        elements.listView.style.display = 'none';
+        elements.profileView.style.display = 'block';
+        elements.messageContainer.style.display = 'none';
+        return;
+    }
+
+    let filtered = allTrainers.filter(t => 
+        t.name.toLowerCase().includes(elements.searchBox?.value?.toLowerCase()?.trim() || '')
+    );
+
+    if (selectedPC !== 'all') {
+        filtered = filtered.filter(t => t.pcs.has(selectedPC));
+    }
+
+    const selectedZone  = document.getElementById('zone-filter')?.value  || 'all';
+    const selectedPhase = document.getElementById('phase-filter')?.value || 'all';
+
+    if (selectedZone !== 'all') {
+        filtered = filtered.filter(t => 
+            t.allBeneficiaries.some(b => b.zones?.trim() === selectedZone)
+        );
+    }
+
+    if (selectedPhase !== 'all') {
+        filtered = filtered.filter(t => 
+            t.allBeneficiaries.some(b => b.dflt_phase?.trim() === selectedPhase)
+        );
+    }
+    if (!filtered.length) {
+        elements.messageText.textContent = "No trainers match your search/filter.";
+        elements.messageContainer.style.display = 'block';
+        elements.listView.style.display = 'none';
+        return;
+    }
+
+    elements.messageContainer.style.display = 'none';
+    elements.listView.style.display = 'block';
+    elements.profileView.style.display = 'none';
+
+    filtered.sort((a, b) => {
+        const curA = getRetentionStats(a, selectedMonth);
+        const curB = getRetentionStats(b, selectedMonth);
+        const allA = getRetentionStats(a, 'all');
+        const allB = getRetentionStats(b, 'all');
+
+        let va, vb;
+        const isCurrent = sortState.column.startsWith('current');
+        const stats = isCurrent ? curA : allA;
+        const statsB = isCurrent ? curB : allB;
+
+        if (sortState.column.includes('Registered')) {
+            va = stats.registered; vb = statsB.registered;
+        } else if (sortState.column.includes('Proclaimed')) {
+            va = parseInt(stats.proclaimed) || 0;
+            vb = parseInt(statsB.proclaimed) || 0;
+        } else if (sortState.column.includes('Verified')) {
+            va = parseInt(stats.verified) || 0;
+            vb = parseInt(statsB.verified) || 0;
+        } else {
+            va = a.name.localeCompare(b.name);
+            vb = 0;
+        }
+
+        return sortState.order === 'asc' ? va - vb : vb - va;
+    });
+
+    renderTrainerList(filtered);
+}
+
+function renderTrainerList(trainers) {
+    elements.listTbody.innerHTML = '';
+
+    const fragment = document.createDocumentFragment();
+
+    trainers.forEach(t => {
+        const cur  = getRetentionStats(t, selectedMonth);
+        const all  = getRetentionStats(t, 'all');
+
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = `
+            <td class="px-4 py-3 clickable-name" data-key="${t.key}">${t.name}</td>
+            <td class="px-4 py-3 text-xs">${t.provincesStr}</td>
+            <td class="px-4 py-3 text-xs">${t.districtsStr}</td>
+            <td class="px-4 py-3 text-xs">${t.dutyStationsStr}</td>
+            <td class="px-4 py-3 text-xs">${t.pcListStr}</td>
+            <td class="px-4 py-3 text-center font-medium">${cur.registered.toLocaleString()}</td>
+            <td class="px-4 py-3 text-center">${cur.proclaimed}</td>
+            <td class="px-4 py-3 text-center">${cur.verified}</td>
+            <td class="px-4 py-3 text-center font-medium">${all.registered.toLocaleString()}</td>
+            <td class="px-4 py-3 text-center">${all.proclaimed}</td>
+            <td class="px-4 py-3 text-center">${all.verified}</td>
+        `;
+        fragment.appendChild(row);
+    });
+
+    elements.listTbody.appendChild(fragment);
+}
+
+// ─── Profile View ───────────────────────────────────────────────────────────────
+
+function renderTrainerProfile(trainer) {
+    const currentStats = getRetentionStats(trainer, selectedMonth);
+    const totalBens = trainer.allBeneficiaries.length;
+    const trainings = trainer.trainingsCount || 0;
+    const monthlyTarget = trainer.isPair ? 256 : 128;
+
+    let trainerInfoHTML = '';
+    if (trainer.isPair && trainer.members) {
+        trainer.members.forEach((info, name) => {
+            trainerInfoHTML += `
+            <div class="mt-4">
+                <p class="font-semibold text-lg">${name}</p>
+                <p class="text-sm"><strong class="inline-block w-20 text-gray-600">CNIC:</strong> ${info.cnic || 'N/A'}</p>
+                <p class="text-sm"><strong class="inline-block w-20 text-gray-600">Phone:</strong> ${info.ph_number || 'N/A'}</p>
+            </div>`;
+        });
+    } else {
+        trainerInfoHTML = `
+        <p class="text-sm"><strong class="inline-block w-20 text-gray-600">CNIC:</strong> ${trainer.cnic || 'N/A'}</p>
+        <p class="text-sm"><strong class="inline-block w-20 text-gray-600">Phone:</strong> ${trainer.ph_number || 'N/A'}</p>`;
+    }
+
+    const trendDatasets = getMonthlyTrendData(trainer);
+    const isAuthorized = ['drfareeha', 'azmat', 'anam@sdpi.org', 'kamran@sdpi.org', 'iffat@sdpi.org'].includes(currentUser);
+
+    const durationStats = computeDurationStats(trainer.allBeneficiaries);
+    const trainerPrepost = getTrainerPrepost(trainer);
+    const preCount  = trainerPrepost.filter(r => (r.prepost_type||'').toLowerCase().includes('pre')).length;
+    const postCount = trainerPrepost.filter(r => (r.prepost_type||'').toLowerCase().includes('post')).length;
+    const uniquePostCnics = new Set(
+        trainerPrepost.filter(r => (r.prepost_type||'').toLowerCase().includes('post'))
+                      .map(r => String(r.beneficiary_cnic||'').trim())
+    ).size;
+
+    let chartLabels = [];
+    let datasets = [];
+
+    if (trendDatasets.length === 1) {
+        const data = trendDatasets[0].data;
+        chartLabels = data.map(m => m.label).reverse();
+
+        datasets = [{
+            label: 'Registered',
+            data: data.map(m => m.registered).reverse(),
+            backgroundColor: 'rgba(79, 70, 229, 0.65)',
+            borderColor: '#4f46e5',
+            borderWidth: 1
+        }];
+    } else if (trendDatasets.length === 2) {
+        const data1 = trendDatasets[0].data;
+        const data2 = trendDatasets[1].data;
+
+        const allMonths = new Set([
+            ...data1.map(d => d.ym),
+            ...data2.map(d => d.ym)
+        ]);
+
+        const sortedMonths = [...allMonths].sort().reverse();
+        chartLabels = sortedMonths.map(ym => 
+            new Date(ym + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        );
+
+        const map1 = new Map(data1.map(d => [d.ym, d]));
+        const map2 = new Map(data2.map(d => [d.ym, d]));
+
+        datasets = [
+            {
+                label: trendDatasets[0].trainerName + ' - Registered',
+                data: sortedMonths.map(ym => map1.get(ym)?.registered || 0),
+                backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                borderColor: '#4f46e5',
+                borderWidth: 1
+            },
+            {
+                label: trendDatasets[1].trainerName + ' - Registered',
+                data: sortedMonths.map(ym => map2.get(ym)?.registered || 0),
+                backgroundColor: 'rgba(236, 72, 153, 0.7)',
+                borderColor: '#ec4899',
+                borderWidth: 1
+            }
+        ];
+    }
+
+    elements.profileView.innerHTML = `
+<div class="card fade-in p-6 lg:p-8">
+    <button id="back-to-list" type="button" class="back-button mb-6 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+        </svg>
+        Back to List
+    </button>
+
+    <h2 class="text-3xl lg:text-4xl font-extrabold text-indigo-700 mb-8">${trainer.name}</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div class="stat-card current">
+            <h3 class="stat-title">Current Selection</h3>
+            <p class="stat-value text-indigo-700">${currentStats.registered.toLocaleString()}</p>
+            <div class="progress-bar mt-4"><div class="progress-bar-inner" style="width: ${monthlyTarget ? Math.min(100, Math.round(currentStats.registered / monthlyTarget * 100)) : 0}%"></div></div>
+            <p class="text-sm font-semibold text-indigo-600 mt-3">${monthlyTarget ? Math.round(currentStats.registered / monthlyTarget * 100) : 0}% of Target</p>
+        </div>
+        <div class="stat-card target">
+            <h3 class="stat-title">Monthly Target</h3>
+            <p class="stat-value text-gray-800">${monthlyTarget.toLocaleString()}</p>
+        </div>
+        <div class="stat-card benefits">
+            <h3 class="stat-title">Total Beneficiaries</h3>
+            <p class="stat-value text-green-700">${totalBens.toLocaleString()}</p>
+        </div>
+        <div class="stat-card trainings">
+            <h3 class="stat-title">Total Trainings</h3>
+            <p class="stat-value text-amber-700">${trainings.toLocaleString()}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+        <div class="border-t pt-6">
+            <h3 class="text-xl font-bold mb-5">Trainer Details</h3>
+            <div class="space-y-3 text-sm">${trainerInfoHTML}</div>
+        </div>
+        <div class="border-t pt-6">
+            <h3 class="text-xl font-bold mb-5">Coverage</h3>
+            <div class="space-y-3 text-sm">
+                <p><strong class="w-32 inline-block text-gray-600">Provinces:</strong> ${trainer.provincesStr}</p>
+                <p><strong class="w-32 inline-block text-gray-600">Districts:</strong> ${trainer.districtsStr}</p>
+                <p><strong class="w-32 inline-block text-gray-600">Tehsils:</strong> ${trainer.tehsilsStr}</p>
+                <p><strong class="w-32 inline-block text-gray-600">Duty Stations:</strong> ${trainer.dutyStationsStr}</p>
+                <p><strong class="w-32 inline-block text-gray-600">First Training:</strong> ${trainer.firstTraining?.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) || '—'}</p>
+                <p><strong class="w-32 inline-block text-gray-600">Last Training:</strong> ${trainer.lastTraining?.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) || '—'}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="border-t pt-8 mt-8">
+        <h3 class="text-2xl font-bold mb-6">Monthly Trend</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="h-96">
+                <canvas id="monthlyBarChart"></canvas>
+            </div>
+
+            <div class="space-y-8">
+                ${trendDatasets.map((set, idx) => `
+                <div class="table-container" style="max-height:380px;">
+                    <div class="font-semibold text-lg mb-2">${set.trainerName}</div>
+                   <table class="w-full text-sm">
+                        <thead class="bg-gray-100 sticky top-0 z-10">
+                            <tr>
+                                <th class="px-5 py-3 text-left font-semibold">Month</th>
+                                <th class="px-5 py-3 text-center font-semibold">Registered</th>
+                                <th class="px-5 py-3 text-center font-semibold">Proclaimed Ret.</th>
+                                <th class="px-5 py-3 text-center font-semibold">Verified</th>
+                                <th class="px-5 py-3 text-center font-semibold">Not Verified</th>
+                                <th class="px-5 py-3 text-center font-semibold">Pending</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${set.data.length === 0 ? `
+                                <tr><td colspan="6" class="text-center py-10 text-gray-500">No data</td></tr>
+                            ` : set.data.map(m => `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-5 py-3">${m.label}</td>
+                                    <td class="px-5 py-3 text-center font-medium">${m.registered.toLocaleString()}</td>
+                                    <td class="px-5 py-3 text-center ${m.procPct >= 80 ? 'text-green-600 font-bold' : m.procPct < 50 ? 'text-red-600' : ''}">
+                                        ${m.proclaimed} (${m.procPct}%)
+                                    </td>
+                                    <td class="px-5 py-3 text-center ${m.verPct >= 80 ? 'text-green-600 font-bold' : m.verPct < 50 ? 'text-red-600' : ''}">
+                                        ${m.verified} (${m.verPct}%)
+                                    </td>
+                                    <td class="px-5 py-3 text-center text-red-700 font-medium">
+                                        ${m.notVerified || 0} (${m.notVerPct || 0}%)
+                                    </td>
+                                    <td class="px-5 py-3 text-center text-amber-700 font-medium">
+                                        ${m.pending || 0} (${m.pendingPct || 0}%)
+                                    </td>
+                                </tr>
+                            `).join('')}
+
+                            <!-- Totals Row -->
+                            <tr class="bg-gray-50 font-semibold border-t-2 border-gray-300">
+                                <td class="px-5 py-3 text-right">TOTAL (All Months)</td>
+                                <td class="px-5 py-3 text-center">${set.data.reduce((sum, m) => sum + m.registered, 0).toLocaleString()}</td>
+                                <td class="px-5 py-3 text-center">${set.data.reduce((sum, m) => sum + m.proclaimed, 0)}</td>
+                                <td class="px-5 py-3 text-center text-green-700">${set.data.reduce((sum, m) => sum + m.verified, 0)}</td>
+                                <td class="px-5 py-3 text-center text-red-700">${set.data.reduce((sum, m) => sum + (m.notVerified || 0), 0)}</td>
+                                <td class="px-5 py-3 text-center text-amber-700">${set.data.reduce((sum, m) => sum + (m.pending || 0), 0)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                `).join('')}
+            </div>
+        </div>
+    </div>
+
+    ${isAuthorized ? `
+    <div class="border-t pt-8 mt-8">
+        <h3 class="text-2xl font-bold mb-6">Beneficiary Records</h3>
+        <div id="beneficiary-prompt" class="flex flex-wrap items-center gap-4 mb-6">
+            <button id="show-beneficiary-table" class="btn">Show Full List</button>
+            <button id="export-csv-btn" class="btn secondary">Export CSV</button>
+        </div>
+        <div id="beneficiary-table-container" class="hidden">
+            <button id="hide-beneficiary-table" class="btn secondary mb-5">Hide List</button>
+            <div class="table-container" style="max-height:420px; overflow-x:auto;">
+                <table class="w-full text-sm min-w-[1100px]">
+                    <thead class="bg-gray-100 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-5 py-3 text-left">Date</th>
+                            <th class="px-5 py-3 text-left">Bene Name</th>
+                            <th class="px-5 py-3 text-left">CNIC</th>
+                            <th class="px-5 py-3 text-center">Age</th>
+                            <th class="px-5 py-3 text-left">Occupation</th>
+                            <th class="px-5 py-3 text-left">Education</th>
+                            <th class="px-5 py-3 text-left">Phone Number</th>
+                            <th class="px-5 py-3 text-center">Verified</th>
+                            <th class="px-5 py-3 text-left">Comment</th>
+                            <th class="px-5 py-3 text-center">CNIC Link</th>
+                        </tr>
+                    </thead>
+                    <tbody id="beneficiary-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    ` : `
+    <div class="border-t pt-8 mt-8 text-center py-12 bg-gray-50 rounded-xl">
+        <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-xl font-bold text-gray-700">Authorized Access Only</h3>
+        <p class="text-gray-600">Beneficiary details and export are visible only to DFLT Team Leads.</p>
+    </div>
+    `}
+
+    <div class="border-t pt-8 mt-8">
+        <h3 class="text-2xl font-bold mb-4">📏 Registration Duration Analysis</h3>
+        <p class="text-sm text-gray-500 mb-5">Time taken to complete each beneficiary registration form. ≥10% in the 1–1.5 min bucket is flagged as rush.</p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
+            <div class="bg-red-50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-red-600">${durationStats.buckets['1-1.5']}</div>
+                <div class="text-xs text-gray-500 mt-1">1–1.5 min (Rush)</div>
+                <div class="text-sm font-bold ${parseFloat(durationStats.pct['1-1.5']) >= 10 ? 'text-red-600' : 'text-green-600'}">${durationStats.pct['1-1.5']}%</div>
+            </div>
+            <div class="bg-yellow-50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-yellow-600">${durationStats.buckets['1.5-2']}</div>
+                <div class="text-xs text-gray-500 mt-1">1.5–2 min</div>
+                <div class="text-sm font-semibold text-yellow-700">${durationStats.pct['1.5-2']}%</div>
+            </div>
+            <div class="bg-green-50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-green-600">${durationStats.buckets['2-4']}</div>
+                <div class="text-xs text-gray-500 mt-1">2–4 min (Ideal)</div>
+                <div class="text-sm font-semibold text-green-700">${durationStats.pct['2-4']}%</div>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-4 text-center">
+                <div class="text-2xl font-bold text-blue-600">${durationStats.buckets['4+']}</div>
+                <div class="text-xs text-gray-500 mt-1">4+ min</div>
+                <div class="text-sm font-semibold text-blue-700">${durationStats.pct['4+']}%</div>
+            </div>
+        </div>
+        <p class="text-sm text-gray-500">Records with duration data: <strong>${durationStats.total}</strong> / <strong>${trainer.allBeneficiaries.length}</strong></p>
+        <div class="mt-6">
+            <h4 class="text-base font-semibold text-gray-700 mb-3">Daily Average Duration Trend</h4>
+            <div class="h-72 w-full">
+                <canvas id="durationTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="border-t pt-8 mt-8">
+        <h3 class="text-2xl font-bold mb-4">📋 Pre / Post Assessment</h3>
+        ${trainerPrepost.length === 0 ? `
+            <p class="text-gray-500 italic">No pre/post records found for this trainer.</p>
+        ` : `
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div class="bg-indigo-50 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-indigo-600">${trainerPrepost.length}</div>
+                    <div class="text-xs text-gray-500 mt-1">Total Records</div>
+                </div>
+                <div class="bg-purple-50 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-purple-600">${preCount}</div>
+                    <div class="text-xs text-gray-500 mt-1">Pre-Test</div>
+                </div>
+                <div class="bg-teal-50 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-teal-600">${postCount}</div>
+                    <div class="text-xs text-gray-500 mt-1">Post-Test</div>
+                </div>
+                <div class="bg-green-50 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-green-600">${uniquePostCnics}</div>
+                    <div class="text-xs text-gray-500 mt-1">Unique Post-Test CNICs</div>
+                </div>
+            </div>
+            <div class="mb-6">
+                <h4 class="text-base font-semibold text-gray-700 mb-3">Daily Pre vs Post Submissions</h4>
+                <div class="h-64 w-full">
+                    <canvas id="prepostTrendChart"></canvas>
+                </div>
+            </div>
+            <div class="table-container" style="max-height:320px; overflow-x:auto;">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-5 py-3 text-left">CNIC</th>
+                            <th class="px-5 py-3 text-left">Type</th>
+                            <th class="px-5 py-3 text-left">Date</th>
+                            <th class="px-5 py-3 text-left">PC</th>
+                            <th class="px-5 py-3 text-left">Zone</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${trainerPrepost.map(r => {
+                            const dateStr = (r.starttime || r.SubmissionDate || '').split(/[T\s]/)[0];
+                            const isPreTest = (r.prepost_type||'').toLowerCase().includes('pre');
+                            return `<tr class="hover:bg-gray-50">
+                                <td class="px-5 py-2 font-mono text-xs">${r.beneficiary_cnic || '—'}</td>
+                                <td class="px-5 py-2 font-medium ${isPreTest ? 'text-purple-600' : 'text-teal-600'}">${r.prepost_type || '—'}</td>
+                                <td class="px-5 py-2">${dateStr || '—'}</td>
+                                <td class="px-5 py-2">${r.provincial_coordinator || '—'}</td>
+                                <td class="px-5 py-2">${r.zones || '—'}</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `}
+    </div>
+
+</div>`;
+
+    if (durationChartInstance) durationChartInstance.destroy();
+    renderDurationChart(trainer.allBeneficiaries);
+
+    if (prepostChartInstance) prepostChartInstance.destroy();
+    renderPrepostChart(trainerPrepost);
+
+    if (chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('monthlyBarChart')?.getContext('2d');
+    if (ctx && chartLabels.length > 0) {
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true },
+                    x: { ticks: { maxRotation: 45, minRotation: 0 } }
+                },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            }
+        });
+    }
+}
+
+// ─── Duration Trend Chart ────────────────────────────────────────────────────────
+
+function renderDurationChart(beneficiaries) {
+    const canvas = document.getElementById('durationTrendChart');
+    if (!canvas) return;
+
+    if (durationChartInstance) { durationChartInstance.destroy(); durationChartInstance = null; }
+
+    const daily = new Map();
+    beneficiaries.forEach(b => {
+        if (!b.starttime) return;
+        const day = b.starttime.split(/[T\s]/)[0];
+        if (!daily.has(day)) daily.set(day, { count: 0, sum: 0 });
+        const m = calculateMinutes(b.starttime, b.endtime);
+        if (m !== null) {
+            const e = daily.get(day);
+            e.count++;
+            e.sum += m;
+        }
+    });
+
+    const data = Array.from(daily, ([dateStr, {count, sum}]) => ({
+        x: new Date(dateStr),
+        y: count > 0 ? +(sum / count).toFixed(2) : 0,
+        count
+    })).sort((a, b) => a.x - b.x);
+
+    if (data.length === 0) {
+        canvas.parentElement.innerHTML = '<p class="text-center py-10 text-gray-400 text-sm">No duration data available</p>';
+        return;
+    }
+
+    durationChartInstance = new Chart(canvas, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Avg Duration (minutes)',
+                data,
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.12)',
+                fill: true,
+                tension: 0.2,
+                pointRadius: 4,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const d = ctx.raw;
+                            return [`Avg: ${d.y} min`, `Registrations: ${d.count}`];
+                        }
+                    }
+                },
+                legend: { position: 'top' }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day' },
+                    title: { display: true, text: 'Date' }
+                },
+                y: {
+                    beginAtZero: true,
+                    max: 9,
+                    ticks: { stepSize: 1 },
+                    title: { display: true, text: 'Avg Duration (min)' }
+                }
+            }
+        }
+    });
+}
+
+// ─── Pre/Post Trend Chart ────────────────────────────────────────────────────────
+
+function renderPrepostChart(records) {
+    const canvas = document.getElementById('prepostTrendChart');
+    if (!canvas) return;
+
+    if (prepostChartInstance) { prepostChartInstance.destroy(); prepostChartInstance = null; }
+
+    if (records.length === 0) return;
+
+    // Group by date; count pre and post CNICs, compute matched vs errors
+    const byDate = new Map();
+    records.forEach(r => {
+        const date = (r.starttime || r.SubmissionDate || '').split(/[T\s]/)[0];
+        if (!date) return;
+        if (!byDate.has(date)) byDate.set(date, { pre: new Set(), post: new Set() });
+        const cnic = String(r.beneficiary_cnic || '').trim();
+        if (!cnic) return;
+        const isPreTest = (r.prepost_type || '').toLowerCase().includes('pre');
+        if (isPreTest) byDate.get(date).pre.add(cnic);
+        else           byDate.get(date).post.add(cnic);
+    });
+
+    const dates = [...byDate.keys()].sort();
+    const matchedData = dates.map(d => {
+        const { pre, post } = byDate.get(d);
+        return [...pre].filter(x => post.has(x)).length;
+    });
+    const errorData = dates.map(d => {
+        const { pre, post } = byDate.get(d);
+        const drops  = [...pre].filter(x => !post.has(x)).length;
+        const ghosts = [...post].filter(x => !pre.has(x)).length;
+        return drops + ghosts;
+    });
+
+    prepostChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [
+                { label: 'Matched (Pre+Post)', data: matchedData, backgroundColor: '#22c55e', borderRadius: 5 },
+                { label: 'Errors (Dropout/Ghost)', data: errorData,  backgroundColor: '#ef4444', borderRadius: 5 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { stacked: true, grid: { display: false }, title: { display: true, text: 'Date' } },
+                y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Count' }, ticks: { stepSize: 1, precision: 0 } }
+            }
+        }
+    });
+}
+
+// ─── Beneficiary Table & Export ─────────────────────────────────────────────────
+
+function showBeneficiaryTable(key) {
+    const trainer = allTrainers.find(t => t.key === key);
+    if (!trainer) return;
+
+    // Only include beneficiaries where attendance_status === 1
+    const presentBeneficiaries = trainer.allBeneficiaries.filter(b => 
+        parseInt(b.attendance_status) === 1
+    );
+
+    const tbody = document.getElementById('beneficiary-table-body');
+
+    if (presentBeneficiaries.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" class="text-center py-10 text-gray-500">
+                    No present / proclaimed beneficiaries found
+                </td>
+            </tr>`;
+        return;
+    }
+
+    tbody.innerHTML = presentBeneficiaries.map(b => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3">${b.starttime || '—'}</td>
+            <td class="px-5 py-3">${b.beneficiary_name || '—'}</td>
+            <td class="px-5 py-3 font-mono">${b.beneficiary_cnic || '—'}</td>
+            <td class="px-5 py-3 text-center">${b.age || '—'}</td>
+            <td class="px-5 py-3">${b.occupation || '—'}</td>
+            <td class="px-5 py-3">${b.education || '—'}</td>
+            <td class="px-5 py-3">${b.phone_number || b.access_phone_num || b.whatsapp_number || '—'}</td>
+            <td class="px-5 py-3 text-center ${b.verified_retention_status === 'Verified' ? 'text-green-600 font-medium' : 'text-amber-600'}">
+                ${b.verified_retention_status || 'Pending'}
+            </td>
+            <td class="px-5 py-3">${b.not_verified_comment || '—'}</td>
+            <td class="px-5 py-3 text-center">
+                ${b.collective_bene_cnic_photo ? 
+                    `<a href="${b.collective_bene_cnic_photo}" target="_blank" class="text-indigo-600 hover:underline">View Photo</a>` : 
+                    '—'}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function exportBeneficiariesCsv(key) {
+    const trainer = allTrainers.find(t => t.key === key);
+    if (!trainer || !trainer.allBeneficiaries.length) return alert("No data to export.");
+
+    const rows = trainer.allBeneficiaries.filter(b => b.attendance_status === 1).map(b => [
+        `"${b.starttime || ''}"`,
+        `"${(b.beneficiary_name || '').replace(/"/g,'""')}"`,
+        `"${b.beneficiary_cnic || ''}"`,
+        `"${b.age || ''}"`,
+        `"${(b.occupation || '').replace(/"/g,'""')}"`,
+        `"${(b.education || '').replace(/"/g,'""')}"`,
+        `"${b.phone_number || b.access_phone_num || b.whatsapp_number || ''}"`,
+        `"${b.verified_retention_status || 'Pending'}"`,
+        `"${(b.not_verified_comment || '').replace(/"/g,'""')}"`,
+        `"${b.collective_bene_cnic_photo || ''}"`
+    ].join(','));
+
+    const csv = [
+        'Date,Bene Name,Beneficiary CNIC,Age,Occupation,Education,Phone Number,Verified,Comment,CNIC Photo Link',
+        ...rows
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${trainer.name.replace(/[^a-z0-9]/gi,'_')}_beneficiaries.csv`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
+  <script src="assets/js/shared-sidebar.js"></script>
+</body>
+</html>

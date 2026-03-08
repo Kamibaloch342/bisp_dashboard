@@ -1,0 +1,611 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFLT Beneficiary Registration Duration Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --brand-color: #4f46e5;
+            --rush-color: #fee2e2;
+            --good-color: #ecfdf5;
+        }
+        body { font-family: 'Montserrat', sans-serif; background-color: var(--bg-color); color: var(--text-primary); min-height: 100vh; }
+        #app-container { max-width: 1800px; margin: 0 auto; padding: 1.5rem; }
+        .card { background: white; border-radius: 1.5rem; border: 1px solid var(--border-color); padding: 1.5rem; box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+        .rush-row { background-color: var(--rush-color) !important; }
+        .good-row { background-color: var(--good-color) !important; }
+        .clickable-name { color: var(--brand-color); font-weight: 600; cursor: pointer; }
+        .clickable-name:hover { text-decoration: underline; }
+        .table-container { overflow-y: auto; max-height: 65vh; }
+        thead th { position: sticky; top: 0; z-index: 10; background: #f3f4f6; }
+        .back-button { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-weight: 600; cursor: pointer; }
+        .back-button:hover { color: var(--brand-color); }
+
+        /* Sidebar styles (same as before) */
+        #left-sidebar { position: fixed; inset: 0 auto 0 0; width: 76px; background: white; border-right: 1px solid #e5e7eb; box-shadow: 2px 0 15px rgba(0,0,0,0.04); transition: width 0.35s ease; overflow: hidden; z-index: 50; }
+        #left-sidebar .sidebar-content { opacity: 0; transition: opacity 0.25s ease 0.08s; }
+        #left-sidebar:hover { width: 280px; }
+        #left-sidebar:hover .sidebar-content { opacity: 1; }
+        @media (max-width: 1023px) { #left-sidebar { transform: translateX(-100%); width: 280px !important; } #left-sidebar.mobile-open { transform: translateX(0); } }
+        #sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; display: none; }
+        #sidebar-overlay.active { display: block; }
+    </style>
+</head>
+<body class="antialiased">
+
+<div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-95 flex items-center justify-center z-50 transition-opacity">
+    <div class="w-14 h-14 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+</div>
+
+<button id="mobile-menu-btn" class="lg:hidden fixed top-4 left-4 z-50 bg-white p-2.5 rounded-xl shadow-md">
+    <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+</button>
+
+
+
+
+
+
+
+
+
+<!-- Sidebar navigation -->
+<aside id="left-sidebar">
+    <div class="sidebar-content p-5">
+        <div class="border-b pb-4 mb-4 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-indigo-600">Decks</h2>
+            <button id="close-sidebar-btn" class="lg:hidden text-gray-700"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+                <nav class="p-4">
+                <ul class="space-y-2" id="sidebar-nav">
+                    <li>
+                        <a href="index.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            <span class="ml-3">DFLT Status Deck</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/Benefeciary_status_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <span class="ml-3">Beneficiary Status</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/DFLT_2_Soft_launch_Map.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                            <span class="ml-3">DFLT Mapping</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/Trainings_Locations_Viewers.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">DFLT Session</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/trainers_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            <span class="ml-3">Trainers Progress</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/ic_data_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                            <span class="ml-3">IC Monitoring Deck</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/GRM Table.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">GRM Analytics Table</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/duration_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 bg-indigo-100 text-indigo-700 font-semibold">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="ml-3">Duration Analysis</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/trainer_report.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="ml-3">Trainer Report Deck</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT-Target Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                            <span class="ml-3">Target Achievement</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT_Visuals_Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                            <span class="ml-3">DFLT Visuals Deck</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT Pre-Post.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            <span class="ml-3">DFLT Pre Post</span>
+                        </a>
+                    </li>
+                         <li class="full-access">
+                        <a href="decks/trainer_audit_report.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="ml-3">Trainers Audits Deck</span>
+                        </a>
+                        </li>
+                </ul>
+            </nav>
+    </div>
+</aside>
+
+<div id="sidebar-overlay"></div>
+
+<main id="page-container" class="lg:ml-[76px] transition-all duration-300">
+
+    <div id="login-container" class="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50">
+        <div class="card p-8 w-full max-w-md">
+            <h2 class="text-2xl font-bold text-center mb-6">Login Required</h2>
+            <form id="login-form">
+                <div class="mb-5"><label class="block text-sm font-medium mb-2">Username</label><input type="text" id="username" required class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500"></div>
+                <div class="mb-6"><label class="block text-sm font-medium mb-2">Password</label><input type="password" id="password" required class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500"></div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold">Login</button>
+            </form>
+            <p id="login-error" class="text-red-600 text-center mt-4 hidden">Invalid credentials</p>
+        </div>
+    </div>
+
+    <div id="app-container" style="display:none;">
+
+        <header class="card mb-8">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <img src="https://www.sdpi.org/assets/images/sdpi-logo-2020.webp" alt="SDPI" class="h-12">
+                    <h1 class="text-3xl font-extrabold text-gray-900">Beneficiary Registration Duration Analysis</h1>
+                </div>
+                <div class="flex flex-wrap gap-4">
+                    <select id="month-filter" class="px-4 py-3 border rounded-xl min-w-[160px]">
+                        <option value="all">All Months</option>
+                    </select>
+                    <select id="pc-filter" class="px-4 py-3 border rounded-xl min-w-[220px]"><option value="all">All PCs</option></select>
+                    <select id="zone-filter" class="px-4 py-3 border rounded-xl min-w-[160px]"><option value="all">All Zones</option></select>
+                    <select id="phase-filter" class="px-4 py-3 border rounded-xl min-w-[160px]"><option value="all">All Phases</option></select>
+                    <select id="alert-filter" class="px-4 py-3 border rounded-xl min-w-[200px]">
+                        <option value="all">All Rows</option>
+                        <option value="rush">Rush ≥10% in 1–1.5 min</option>
+                        <option value="good">Good <10% in 1–1.5 min</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <div id="trainer-list-view" class="card">
+            <h2 class="text-2xl font-bold mb-6">Trainer / Pair Duration Overview</h2>
+            <div class="table-container">
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-700 uppercase text-xs">
+                            <th class="px-6 py-4 text-left">Trainer / Pair</th>
+                            <th class="px-6 py-4 text-left">Phone</th>
+                            <th class="px-6 py-4 text-left">Phase</th>
+                            <th class="px-6 py-4 text-left">Province</th>
+                            <th class="px-6 py-4 text-left">District</th>
+                            <th class="px-6 py-4 text-left">Duty Station</th>
+                            <th class="px-6 py-4 text-center">Total Reg.</th>
+                            <th colspan="4" class="text-center bg-indigo-50">Duration Buckets (count %)</th>
+                        </tr>
+                        <tr class="bg-gray-50 text-xs">
+                            <th></th><th></th><th></th><th></th><th></th><th></th><th></th>
+                            <th class="text-center py-2">1–1.5 min</th>
+                            <th class="text-center py-2">1.5–2 min</th>
+                            <th class="text-center py-2">2–4 min</th>
+                            <th class="text-center py-2">4+ min</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trainer-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="trainer-detail-view" style="display:none;" class="card mt-8">
+            <div class="flex items-center justify-between mb-6">
+                <button id="back-to-list" class="back-button text-lg">← Back to List</button>
+                <h2 id="detail-title" class="text-2xl font-bold"></h2>
+            </div>
+
+            <div class="mb-10">
+                <h3 class="text-xl font-semibold mb-4">Beneficiary List</h3>
+                <div class="table-container" style="max-height:420px;">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-5 py-3 text-left">Name</th>
+                                <th class="px-5 py-3 text-left">Age</th>
+                                <th class="px-5 py-3 text-left">Occupation</th>
+                                <th class="px-5 py-3 text-center">Duration (min)</th>
+                                <th class="px-5 py-3 text-left">Date</th>
+                                <th class="px-5 py-3 text-left">Phase</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bene-detail-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold mb-4">Daily Average Duration Trend</h3>
+                <div class="h-[420px] w-full">
+                    <canvas id="durationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+// ────────────────────────────────────────────────────────────────────────────────
+//   Duration Analysis – Month filter fully working + Age/Occupation + enhanced tooltip
+// ────────────────────────────────────────────────────────────────────────────────
+
+let allTrainers = [];
+let currentTrainerKey = null;
+let chartInstance = null;
+let currentUser = null;
+
+const elements = {
+    loginContainer: document.getElementById('login-container'),
+    appContainer: document.getElementById('app-container'),
+    trainerTbody: document.getElementById('trainer-tbody'),
+    detailView: document.getElementById('trainer-detail-view'),
+    listView: document.getElementById('trainer-list-view'),
+    detailTitle: document.getElementById('detail-title'),
+    beneDetailTbody: document.getElementById('bene-detail-tbody'),
+    chartCanvas: document.getElementById('durationChart')
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupMobileSidebar();
+    if (sessionStorage.getItem('isVerified') === 'true') {
+        currentUser = sessionStorage.getItem('username') || '';
+        elements.loginContainer.style.display = 'none';
+        elements.appContainer.style.display = 'block';
+        initApp();
+    } else {
+        window.location.href = '/login.html';
+    }
+});
+
+function setupMobileSidebar() {
+    const sidebar = document.getElementById('left-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const closeBtn = document.getElementById('close-sidebar-btn');
+
+    menuBtn?.addEventListener('click', () => { sidebar.classList.add('mobile-open'); overlay.classList.add('active'); });
+    closeBtn?.addEventListener('click', closeSidebar);
+    overlay?.addEventListener('click', closeSidebar);
+
+    function closeSidebar() {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+    }
+}
+
+async function initApp() {
+    await loadAndProcessData();
+    populateFilters();
+    setupFilters();
+    renderTrainerList();
+    document.getElementById('loading-overlay').style.display = 'none';
+}
+
+async function loadAndProcessData() {
+    const bens = await fetch('/api/bene-data').then(r => r.json());
+
+    const trainerMap = new Map();
+
+    bens.forEach(b => {
+        const trainerName = (b.trainer_name || '').trim();
+        if (!trainerName) return;
+
+        const pairName = (b.pair || '').trim();
+        const isPair = pairName && pairName !== '(Solo)' && pairName !== trainerName;
+        const key = isPair ? [trainerName, pairName].sort().join(' & ') : trainerName;
+
+        if (!trainerMap.has(key)) {
+            trainerMap.set(key, {
+                key, name: isPair ? key : trainerName, phone: b.trainer_ph_number || '—',
+                phase: new Set(), provinces: new Set(), districts: new Set(), dutyStations: new Set(), zones: new Set(),
+                allBeneficiaries: [], isPair
+            });
+        }
+
+        trainerMap.get(key).allBeneficiaries.push(b);
+
+        if (b.dflt_phase) trainerMap.get(key).phase.add(b.dflt_phase);
+        if (b.province) trainerMap.get(key).provinces.add(b.province);
+        if (b.district) trainerMap.get(key).districts.add(b.district);
+        if (b.duty_station) trainerMap.get(key).dutyStations.add(b.duty_station);
+        if (b.zones) trainerMap.get(key).zones.add(b.zones);
+    });
+
+    allTrainers = [...trainerMap.values()].map(t => ({
+        ...t,
+        phaseStr: [...t.phase].join(', ') || '—',
+        provinceStr: [...t.provinces].join(', ') || '—',
+        districtStr: [...t.districts].join(', ') || '—',
+        dutyStr: [...t.dutyStations].join(', ') || '—',
+        zoneStr: [...t.zones].join(', ') || '—'
+    }));
+}
+
+function getMonthFilteredBeneficiaries(bens, selectedMonth) {
+    if (selectedMonth === 'all') return bens;
+    return bens.filter(b => b.SubmissionDate?.startsWith(selectedMonth));
+}
+
+function computeDurationStats(bens) {
+    const buckets = { '1-1.5': 0, '1.5-2': 0, '2-4': 0, '4+': 0 };
+    let total = 0;
+
+    bens.forEach(b => {
+        const min = calculateMinutes(b.starttime, b.endtime);
+        if (min === null) return;
+        total++;
+        if      (min <= 1.5) buckets['1-1.5']++;
+        else if (min <= 2)   buckets['1.5-2']++;
+        else if (min <= 4)   buckets['2-4']++;
+        else                 buckets['4+']++;
+    });
+
+    const pct = (count) => total ? ((count / total) * 100).toFixed(1) : 0;
+
+    return {
+        total,
+        '1-1.5': { count: buckets['1-1.5'], pct: pct(buckets['1-1.5']) },
+        '1.5-2': { count: buckets['1.5-2'], pct: pct(buckets['1.5-2']) },
+        '2-4':   { count: buckets['2-4'],   pct: pct(buckets['2-4'])   },
+        '4+':    { count: buckets['4+'],    pct: pct(buckets['4+'])    }
+    };
+}
+
+function calculateMinutes(start, end) {
+    if (!start || !end) return null;
+    try {
+        const s = new Date(start.replace(' ', 'T'));
+        const e = new Date(end.replace(' ', 'T'));
+        if (isNaN(s) || isNaN(e) || e <= s) return null;
+        return (e - s) / 60000;
+    } catch { return null; }
+}
+
+function populateFilters() {
+    const months = new Set();
+    const pcs = new Set(); const zones = new Set(); const phases = new Set();
+
+    allTrainers.flatMap(t => t.allBeneficiaries).forEach(b => {
+        if (b.SubmissionDate) months.add(b.SubmissionDate.slice(0,7));
+        if (b.provincial_coordinator) pcs.add(b.provincial_coordinator);
+        if (b.zones) zones.add(b.zones);
+        if (b.dflt_phase) phases.add(b.dflt_phase);
+    });
+
+    const monthSel = document.getElementById('month-filter');
+    [...months].sort().reverse().forEach(m => monthSel.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
+
+    const pcSel = document.getElementById('pc-filter');
+    [...pcs].sort().forEach(p => pcSel.insertAdjacentHTML('beforeend', `<option value="${p}">${p}</option>`));
+
+    const zoneSel = document.getElementById('zone-filter');
+    [...zones].sort().forEach(z => zoneSel.insertAdjacentHTML('beforeend', `<option value="${z}">${z}</option>`));
+
+    const phaseSel = document.getElementById('phase-filter');
+    [...phases].sort().forEach(ph => phaseSel.insertAdjacentHTML('beforeend', `<option value="${ph}">${ph}</option>`));
+}
+
+function setupFilters() {
+    ['month-filter','pc-filter','zone-filter','phase-filter','alert-filter'].forEach(id => {
+        document.getElementById(id).addEventListener('change', renderTrainerList);
+    });
+
+    elements.trainerTbody.addEventListener('click', e => {
+        const cell = e.target.closest('.clickable-name');
+        if (cell) showTrainerDetail(cell.dataset.key);
+    });
+
+    document.getElementById('back-to-list').addEventListener('click', () => {
+        if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+        elements.detailView.style.display = 'none';
+        elements.listView.style.display = 'block';
+        currentTrainerKey = null;
+    });
+}
+
+function getFilteredTrainers() {
+    const month = document.getElementById('month-filter').value;
+    const pc    = document.getElementById('pc-filter').value;
+    const zone  = document.getElementById('zone-filter').value;
+    const phase = document.getElementById('phase-filter').value;
+    const alert = document.getElementById('alert-filter').value;
+
+    let trainers = allTrainers.map(t => {
+        const filteredBens = getMonthFilteredBeneficiaries(t.allBeneficiaries, month);
+        return {
+            ...t,
+            filteredBeneficiaries: filteredBens,
+            durationStats: computeDurationStats(filteredBens)
+        };
+    });
+
+    if (pc    !== 'all') trainers = trainers.filter(t => t.allBeneficiaries.some(b => b.provincial_coordinator === pc));
+    if (zone  !== 'all') trainers = trainers.filter(t => t.zoneStr.includes(zone));
+    if (phase !== 'all') trainers = trainers.filter(t => t.phaseStr.includes(phase));
+
+    if (alert !== 'all') {
+        trainers = trainers.filter(t => {
+            const p = parseFloat(t.durationStats['1-1.5'].pct);
+            return alert === 'rush' ? p >= 10 : p < 10;
+        });
+    }
+
+    return trainers;
+}
+
+function renderTrainerList() {
+    const trainers = getFilteredTrainers();
+    elements.trainerTbody.innerHTML = '';
+
+    trainers.forEach(t => {
+        const s = t.durationStats;
+        const rushPct = parseFloat(s['1-1.5'].pct);
+        const rowClass = rushPct >= 10 ? 'rush-row' : rushPct < 10 ? 'good-row' : '';
+
+        const html = `
+            <tr class="${rowClass} hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4"><span class="clickable-name" data-key="${t.key}">${t.name}</span></td>
+                <td class="px-6 py-4">${t.phone}</td>
+                <td class="px-6 py-4">${t.phaseStr}</td>
+                <td class="px-6 py-4">${t.provinceStr}</td>
+                <td class="px-6 py-4">${t.districtStr}</td>
+                <td class="px-6 py-4">${t.dutyStr}</td>
+                <td class="px-6 py-4 text-center font-medium">${s.total}</td>
+                <td class="px-6 py-4 text-center">${s['1-1.5'].count} <span class="text-gray-500">(${s['1-1.5'].pct}%)</span></td>
+                <td class="px-6 py-4 text-center">${s['1.5-2'].count} <span class="text-gray-500">(${s['1.5-2'].pct}%)</span></td>
+                <td class="px-6 py-4 text-center">${s['2-4'].count} <span class="text-gray-500">(${s['2-4'].pct}%)</span></td>
+                <td class="px-6 py-4 text-center">${s['4+'].count} <span class="text-gray-500">(${s['4+'].pct}%)</span></td>
+            </tr>`;
+        elements.trainerTbody.insertAdjacentHTML('beforeend', html);
+    });
+}
+
+function showTrainerDetail(key) {
+    const trainer = allTrainers.find(t => t.key === key);
+    if (!trainer) return;
+
+    const month = document.getElementById('month-filter').value;
+    const filtered = getMonthFilteredBeneficiaries(trainer.allBeneficiaries, month);
+
+    currentTrainerKey = key;
+    elements.detailTitle.textContent = trainer.name + (month !== 'all' ? ` – ${month}` : '');
+    elements.listView.style.display = 'none';
+    elements.detailView.style.display = 'block';
+
+    let rows = '';
+    filtered.forEach(b => {
+        const min = calculateMinutes(b.starttime, b.endtime);
+        const dur = min !== null ? min.toFixed(1) : '—';
+        rows += `
+            <tr>
+                <td class="px-5 py-3">${b.beneficiary_name || '—'}</td>
+                <td class="px-5 py-3 text-center">${b.age || '—'}</td>
+                <td class="px-5 py-3">${b.occupation || b.occupational_other || '—'}</td>
+                <td class="px-5 py-3 text-center font-medium">${dur}</td>
+                <td class="px-5 py-3">${b.SubmissionDate?.split(' ')[0] || '—'}</td>
+                <td class="px-5 py-3">${b.dflt_phase || '—'}</td>
+            </tr>`;
+    });
+    elements.beneDetailTbody.innerHTML = rows || '<tr><td colspan="6" class="text-center py-10 text-gray-500">No data for selected period</td></tr>';
+
+    renderChart(filtered);
+}
+
+function renderChart(beneficiaries) {
+    if (chartInstance) chartInstance.destroy();
+
+    const daily = new Map();
+    beneficiaries.forEach(b => {
+        if (!b.starttime) return;
+        const day = b.starttime.split(' ')[0];
+        if (!daily.has(day)) daily.set(day, { count: 0, sum: 0 });
+        const m = calculateMinutes(b.starttime, b.endtime);
+        if (m !== null) {
+            const e = daily.get(day);
+            e.count++;
+            e.sum += m;
+        }
+    });
+
+    const data = Array.from(daily, ([dateStr, {count, sum}]) => ({
+        x: new Date(dateStr),
+        y: count > 0 ? sum / count : 0,
+        count: count
+    })).sort((a,b) => a.x - b.x);
+
+    if (data.length === 0) {
+        elements.chartCanvas.parentElement.innerHTML = '<p class="text-center py-20 text-gray-500">No duration data for selected period</p>';
+        return;
+    }
+
+    chartInstance = new Chart(elements.chartCanvas, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Avg Duration (minutes)',
+                data: data,
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.15)',
+                fill: true,
+                tension: 0.2,
+                pointRadius: 5,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const d = ctx.raw;
+                            return [`Avg: ${d.y.toFixed(1)} min`, `Registrations: ${d.count}`];
+                        }
+                    }
+                },
+                legend: { position: 'top' }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day' },
+                    title: { display: true, text: 'Date' }
+                },
+                y: {
+                    beginAtZero: true,
+                    max: 9,
+                    ticks: { stepSize: 1 },
+                    title: { display: true, text: 'Average Duration (minutes)' }
+                }
+            }
+        }
+    });
+}
+</script>
+  <script src="assets/js/shared-sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,298 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFLT Decks | AR Fact Report</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --brand-color: #4f46e5;
+            --brand-light: #eef2ff;
+            --bg-color: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --sidebar-width: 76px;
+            --sidebar-expanded: 280px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg-color); color: var(--text-primary); overflow-x: hidden; }
+
+        /* --- LOGIN --- */
+        #login-container { position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-card { background: white; padding: 2.5rem; border-radius: 1.5rem; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .login-input { width: 100%; padding: 0.8rem 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.75rem; font-family: inherit; }
+        .login-btn { width: 100%; padding: 0.8rem; background: var(--brand-color); color: white; border: none; border-radius: 0.75rem; font-weight: 700; cursor: pointer; }
+
+        /* --- SIDEBAR --- */
+        #left-sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: var(--sidebar-width); background: white;
+            border-right: 1px solid var(--border-color);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000; overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column;
+        }
+        #left-sidebar:hover { width: var(--sidebar-expanded); box-shadow: 10px 0 30px rgba(0,0,0,0.05); }
+
+        .sidebar-header { padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #f1f5f9; }
+        .logo-box { min-width: 42px; height: 42px; background: var(--brand-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; }
+        
+        .sidebar-text { opacity: 0; transition: opacity 0.2s; white-space: nowrap; font-weight: 600; font-size: 0.85rem; }
+        #left-sidebar:hover .sidebar-text { opacity: 1; }
+
+        .nav-section-label { 
+            font-size: 0.65rem; font-weight: 800; color: #cbd5e1; padding: 1.5rem 1.5rem 0.5rem; 
+            text-transform: uppercase; letter-spacing: 0.1em; display: none;
+        }
+        #left-sidebar:hover .nav-section-label { display: block; }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 1.2rem;
+            padding: 0.7rem 1.5rem; color: var(--text-secondary);
+            cursor: pointer; border-radius: 10px; margin: 0.1rem 0.6rem;
+            transition: all 0.2s; text-decoration: none;
+        }
+        .nav-item i, .nav-item svg { min-width: 24px; max-width: 24px; text-align: center; font-size: 1.1rem; }
+        .nav-item:hover { background: #f1f5f9; color: var(--brand-color); }
+        .nav-item.active { background: var(--brand-light); color: var(--brand-color); font-weight: 700; }
+
+        /* --- MAIN LAYOUT --- */
+        #main-wrapper { margin-left: var(--sidebar-width); padding: 2rem; transition: margin-left 0.3s; }
+        .filter-grid {
+            background: white; padding: 1.5rem; border-radius: 1rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem; margin-bottom: 2rem; border: 1px solid var(--border-color);
+        }
+        .filter-input { width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; }
+
+        .table-card { background: white; border-radius: 1rem; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { background: #f8fafc; padding: 1rem; text-align: left; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #f1f5f9; }
+        td { padding: 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        .urdu-cell { font-family: 'Noto Nastaliq Urdu', serif; direction: rtl; text-align: right; line-height: 2.2; font-size: 1.1rem; }
+        .badge { padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+        .badge-issue { background: #fee2e2; color: #ef4444; }
+
+        #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-color); border-radius: 50%; animation: spin 0.5s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            #main-wrapper { margin-left: 0; }
+            #left-sidebar { transform: translateX(-100%); width: 280px; }
+            #left-sidebar.mobile-open { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div></div>
+
+<div id="login-container">
+    <div class="login-card">
+        <h2 style="text-align:center; margin-bottom:1.5rem;">DFLT Decks Access</h2>
+        <input type="text" id="username" placeholder="Username" class="login-input">
+        <input type="password" id="password" placeholder="Password" class="login-input">
+        <button id="login-btn" class="login-btn">Sign In</button>
+        <p id="login-error" style="color:red; text-align:center; font-size:0.8rem; margin-top:1rem;"></p>
+    </div>
+</div>
+
+<aside id="left-sidebar">
+    <div class="sidebar-header">
+        <div class="logo-box"><i class="fa-solid fa-bolt"></i></div>
+        <div class="sidebar-text">DFLT MASTER DASH</div>
+    </div>
+
+    <nav style="padding-bottom: 2rem;">
+        <div class="nav-section-label">General</div>
+        <a href="../index.html" class="nav-item">
+            <i class="fa-solid fa-house"></i>
+            <span class="sidebar-text">DFLT Status Deck</span>
+        </a>
+        <div class="nav-item active">
+            <i class="fa-solid fa-microphone-lines"></i>
+            <span class="sidebar-text">Audio Reviews</span>
+        </div>
+
+        <div class="nav-section-label">Performance & Analytics</div>
+        <a href="../decks/Benefeciary_status_deck.html" class="nav-item">
+            <i class="fa-solid fa-users"></i>
+            <span class="sidebar-text">Beneficiary Status</span>
+        </a>
+        <a href="../decks/trainers_deck.html" class="nav-item">
+            <i class="fa-solid fa-chart-line"></i>
+            <span class="sidebar-text">Trainers Progress</span>
+        </a>
+        <a href="../decks/duration_deck.html" class="nav-item">
+            <i class="fa-solid fa-clock"></i>
+            <span class="sidebar-text">Duration Analysis</span>
+        </a>
+        <a href="../decks/DFLT_Visuals_Deck.html" class="nav-item">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span class="sidebar-text">Visuals Deck</span>
+        </a>
+
+        <div class="nav-section-label">Field & Monitoring</div>
+        <a href="../decks/DFLT_2_Soft_launch_Map.html" class="nav-item">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span class="sidebar-text">DFLT Mapping</span>
+        </a>
+        <a href="../decks/Trainings_Locations_Viewers.html" class="nav-item">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span class="sidebar-text">DFLT Session</span>
+        </a>
+        <a href="../decks/ic_data_deck.html" class="nav-item">
+            <i class="fa-solid fa-clipboard-check"></i>
+            <span class="sidebar-text">IC Monitoring Deck</span>
+        </a>
+        <a href="../decks/trainer_audit_report.html" class="nav-item">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span class="sidebar-text">Trainers Audits</span>
+        </a>
+
+        <div class="nav-section-label">Reporting</div>
+        <a href="../decks/GRM Table.html" class="nav-item">
+            <i class="fa-solid fa-table-list"></i>
+            <span class="sidebar-text">GRM Analytics</span>
+        </a>
+        <a href="../decks/trainer_report.html" class="nav-item">
+            <i class="fa-solid fa-file-lines"></i>
+            <span class="sidebar-text">Trainer Report</span>
+        </a>
+        <a href="../decks/DFLT-Target Deck.html" class="nav-item">
+            <i class="fa-solid fa-bullseye"></i>
+            <span class="sidebar-text">Target Achievement</span>
+        </a>
+        <a href="../decks/DFLT Pre-Post.html" class="nav-item">
+            <i class="fa-solid fa-right-left"></i>
+            <span class="sidebar-text">DFLT Pre Post</span>
+        </a>
+    </nav>
+</aside>
+
+<main id="main-wrapper" style="display:none;">
+    <header style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 800;">AR Fact Report</h1>
+        <p style="color: var(--text-secondary);">Audit findings sorted by latest reviews</p>
+    </header>
+
+    <div class="filter-grid">
+        <div class="filter-group">
+            <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary);">AR NAME</label>
+            <input type="text" id="searchAR" class="filter-input" placeholder="Search Reviewer...">
+        </div>
+        <div class="filter-group">
+            <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary);">TRAINER</label>
+            <input type="text" id="searchTrainer" class="filter-input" placeholder="Search Trainer...">
+        </div>
+        <div class="filter-group">
+            <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary);">DATE</label>
+            <select id="dateSelect" class="filter-input"><option value="All">All Dates</option></select>
+        </div>
+        <div class="filter-group">
+            <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary);">PROVINCE</label>
+            <select id="provinceSelect" class="filter-input"><option value="All">All Provinces</option></select>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Trainer Name</th>
+                        <th>AR Name</th>
+                        <th>Audit Issue</th>
+                        <th>Duration</th>
+                        <th>Fact Report</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTOYw5-MKja5DYTGQhD5ZlMQ_3UAjNSJ4fc1tCXMh9xFZ1x7ldfyjwKCxqdv04xAv-KcK3Vf8rNIXqa/pub?gid=2105447520&single=true&output=csv";
+    let rawData = [];
+
+    // Login logic
+    document.getElementById('login-btn').addEventListener('click', () => {
+        const u = document.getElementById('username').value.trim().toLowerCase();
+        if(u === "drfareeha") {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('main-wrapper').style.display = 'block';
+            loadData();
+        } else {
+            document.getElementById('login-error').innerText = "Access Denied";
+        }
+    });
+
+    function loadData() {
+        document.getElementById('loading').style.display = 'flex';
+        Papa.parse(CSV_URL, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: (results) => {
+                rawData = results.data;
+                setupFilters();
+                renderTable();
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+    }
+
+    function setupFilters() {
+        const dates = [...new Set(rawData.map(r => r.review_date))].sort((a,b) => new Date(b) - new Date(a));
+        const dSel = document.getElementById('dateSelect');
+        dates.forEach(d => { if(d) dSel.innerHTML += `<option value="${d}">${d}</option>`; });
+
+        ['searchAR', 'searchTrainer', 'dateSelect', 'provinceSelect'].forEach(id => {
+            document.getElementById(id).addEventListener('input', renderTable);
+        });
+    }
+
+    function renderTable() {
+        const fAR = document.getElementById('searchAR').value.toLowerCase();
+        const fTR = document.getElementById('searchTrainer').value.toLowerCase();
+        const fDT = document.getElementById('dateSelect').value;
+
+        let filtered = rawData.filter(r => {
+            return (r.Audio_reviewer_name?.toLowerCase().includes(fAR)) &&
+                   (r.trainer_name?.toLowerCase().includes(fTR)) &&
+                   (fDT === 'All' || r.review_date === fDT);
+        }).sort((a,b) => new Date(b.review_date) - new Date(a.review_date));
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        filtered.forEach(row => {
+            const isUrdu = /[\u0600-\u06FF]/.test(row.key_observations);
+            const tr = `
+                <tr>
+                    <td><b>${row.review_date}</b></td>
+                    <td>${row.trainer_name?.replace(/_/g, ' ')}</td>
+                    <td style="color:var(--text-secondary)">${row.Audio_reviewer_name}</td>
+                    <td><span class="badge ${row.any_technical_issue !== 'No' ? 'badge-issue' : ''}">${row.any_technical_issue}</span></td>
+                    <td style="font-family:monospace">${row.hours}:${row.minutes}</td>
+                    <td class="${isUrdu ? 'urdu-cell' : ''}">${row.key_observations}</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', tr);
+        });
+    }
+</script>
+
+  <script src="assets/js/shared-sidebar.js"></script>
+</body>
+</html>

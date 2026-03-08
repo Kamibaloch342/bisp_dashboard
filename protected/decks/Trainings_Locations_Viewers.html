@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainings Locations Viewers</title>
+ 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+ 
+    <style>
+        :root {
+            /* --- Clean "Corporate" Light Palette (Red & Blue) --- */
+            --bg-primary: #f8fafc; /* Slate 50 - Main BG */
+            --bg-secondary: #f0f5ff; /* Faint Blue - for gradient */
+           
+            --brand-blue: #2563eb; /* Blue 600 */
+            --brand-blue-light: #60a5fa; /* Blue 400 */
+            --brand-blue-dark: #1d4ed8; /* Blue 700 */
+           
+            --brand-red: #dc2626; /* Red 600 */
+            --brand-red-dark: #b91c1c; /* Red 700 */
+           
+            /* Glass Card */
+            --card-bg: rgba(255, 255, 255, 0.65); /* White, translucent */
+            --border-color: rgba(226, 232, 240, 0.7); /* Slate 200, translucent */
+            --border-hover: var(--brand-blue);
+           
+            /* Text */
+            --text-primary: #1e293b; /* Slate 800 */
+            --text-secondary: #64748b; /* Slate 500 */
+            --text-brand-gradient: linear-gradient(45deg, var(--brand-red-dark), var(--brand-blue));
+ 
+            /* States & Shadows */
+            --success-color: #22c55e;
+            --error-color: var(--brand-red); /* Use our brand red for errors */
+           
+            --shadow-light: rgba(37, 99, 235, 0.08); /* Blue-tinted shadow */
+            --shadow-heavy: rgba(37, 99, 235, 0.15); /* Heavier blue shadow */
+ 
+            /* Inputs */
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1; /* Slate 300 */
+            --input-focus-shadow: rgba(37, 99, 235, 0.25);
+           
+            --pop-in-transform: scale(0.95) translateY(20px);
+        }
+ 
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+ 
+        html {
+            scroll-behavior: smooth;
+            color-scheme: light;
+        }
+       
+        body {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text-primary);
+            background: linear-gradient(175deg, var(--bg-secondary), var(--bg-primary), var(--bg-primary));
+            background-size: 100% 300%;
+            animation: animatedGradient 25s ease infinite;
+            min-height: 100vh;
+            padding: 2rem 1rem 2rem calc(16rem + 1rem); /* Adjusted for sidebar width (16rem) + 1rem padding */
+            text-rendering: optimizeLegibility;
+            overflow-x: hidden;
+        }
+       
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background-color: var(--brand-blue); border-radius: 10px; border: 2px solid var(--bg-primary); }
+        ::-webkit-scrollbar-thumb:hover { background-color: var(--brand-blue-light); }
+ 
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            opacity: 0;
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+ 
+        .glass-card {
+            background-color: var(--card-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 var(--shadow-light);
+            padding: 1.5rem 2rem;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                        box-shadow 0.4s ease,
+                        border-image-source 0.4s ease;
+           
+            border: 1px solid transparent;
+            background-clip: padding-box;
+            border-image-slice: 1;
+            border-image-source: linear-gradient(135deg, var(--border-color), rgba(226, 232, 240, 0.1));
+        }
+ 
+        .glass-card:hover {
+            box-shadow: 0 16px 40px 0 var(--shadow-heavy);
+            transform: translateY(-8px) scale(1.01);
+            border-image-source: linear-gradient(135deg, var(--border-hover), var(--brand-blue-light));
+        }
+       
+        /* --- Card without hover (for list view wrapper) --- */
+        .glass-card.no-hover:hover {
+            transform: none;
+            box-shadow: 0 8px 32px 0 var(--shadow-light);
+            border-image-source: linear-gradient(135deg, var(--border-color), rgba(226, 232, 240, 0.1));
+        }
+ 
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            text-align: center;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+ 
+        .header-logo-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+ 
+        .header-logo-group img {
+            height: 3.5rem;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.05));
+            background: #fff;
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+ 
+        .header h1 {
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            font-weight: 900;
+            background: var(--text-brand-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+       
+        .clock {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-top: -0.5rem;
+        }
+       
+        .clock-updating {
+            color: var(--brand-blue);
+            transition: color 0.5s ease-in-out;
+            animation: pulse 1.5s infinite;
+        }
+ 
+        .filters-grid {
+            display: grid; grid-template-columns: 1fr; gap: 1.5rem;
+        }
+        @media (min-width: 768px) { .filters-grid { grid-template-columns: 2fr 1fr 1fr; } }
+       
+        .filters-bottom-row {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .filters-bottom-row {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+ 
+        .input-group label {
+            display: block; font-size: 0.875rem; font-weight: 600;
+            color: var(--text-secondary); margin-bottom: 0.5rem;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        .input-group .input-wrapper { position: relative; }
+        .input-group input {
+            width: 100%; padding: 0.8rem 1rem; border-radius: 0.75rem;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            font-family: 'Montserrat', sans-serif; font-size: 1rem;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 4px var(--input-focus-shadow);
+            background: #fff;
+        }
+        .input-group .input-icon {
+            position: absolute; left: 1rem; top: 50%;
+            transform: translateY(-50%); color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+        .input-group input:focus + .input-icon { color: var(--brand-blue); }
+        .input-group input[type="text"] { padding-left: 2.75rem; }
+        .input-group input[type="date"] { cursor: pointer; }
+ 
+        /* --- View Toggler --- */
+        .view-toggle {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 9999px;
+            padding: 0.3rem;
+            border: 1px solid var(--input-border);
+        }
+        .view-toggle .btn {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            box-shadow: none;
+        }
+        .view-toggle .btn.active {
+            background: var(--brand-blue);
+            color: white;
+            box-shadow: 0 4px 10px var(--shadow-light);
+        }
+        .view-toggle .btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+ 
+        .btn {
+            display: flex; width: 100%; align-items: center; justify-content: center;
+            gap: 0.6rem; font-weight: 700; border-radius: 9999px;
+            padding: 0.9rem 1.5rem; transition: all 0.3s ease;
+            cursor: pointer; border: 2px solid transparent;
+            font-size: 1rem; text-decoration: none;
+        }
+       
+        .btn-primary {
+            background-color: var(--brand-blue); color: white;
+            background-image: linear-gradient(45deg, var(--brand-blue-dark), var(--brand-blue-light));
+            background-size: 200% 200%;
+            background-position: 0% 0%;
+            box-shadow: 0 4px 15px var(--shadow-heavy);
+            border: none; padding: calc(0.9rem + 2px) 1.5rem;
+        }
+        .btn-primary:hover {
+            background-position: 100% 100%;
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 7px 25px rgba(37, 99, 235, 0.4);
+        }
+ 
+        .btn-secondary {
+            background-color: #fff;
+            color: var(--text-primary);
+            border: 2px solid var(--input-border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .btn-secondary:hover {
+            background-color: var(--bg-primary);
+            border-color: var(--input-border);
+            color: var(--text-primary);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 4px 15px var(--shadow-light);
+        }
+       
+        .btn-disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; transform: none; box-shadow: none; background-color: #e2e8f0; border-color: transparent; }
+        .btn.copied {
+            background-color: var(--success-color); color: white;
+            border-color: var(--success-color);
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+            transform: translateY(-4px) !important;
+            animation: pulse-success 0.6s ease-out;
+        }
+       
+        /* --- Card View --- */
+        .sessions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 2rem; }
+       
+        .session-card-content { display: flex; flex-direction: column; gap: 1rem; }
+       
+        .card-header {
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .card-header span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .card-header p {
+            font-size: 1.2rem;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-top: 0.5rem;
+            color: var(--text-primary);
+        }
+ 
+        .card-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+        .card-details-grid > div > span {
+            font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .card-details-grid > div > p {
+            font-weight: 500;
+            line-height: 1.5;
+            color: #334155; /* Slate 700 */
+            margin-top: 0.25rem;
+            /* Allow text to break */
+            overflow-wrap: break-word;
+            word-break: break-all;
+        }
+       
+        .session-card-footer { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem; }
+ 
+        /* --- List View --- */
+        .sessions-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .list-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1.5fr 1.5fr 1fr; /* Adjust as needed */
+            gap: 1.5rem;
+            align-items: center;
+            padding: 1.25rem 2rem;
+            border-radius: 1rem;
+            background: #fff;
+            border: 1px solid var(--input-border);
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: popIn 0.5s ease-out forwards;
+        }
+        .list-row:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 15px var(--shadow-light);
+            border-color: var(--brand-blue-light);
+        }
+       
+        .list-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1.5fr 1.5fr 1fr; /* Must match .list-row */
+            gap: 1.5rem;
+            padding: 0 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        @media (max-width: 900px) {
+            .list-header { display: none; }
+            .list-row {
+                grid-template-columns: 1fr 1fr; /* Stack on mobile */
+                padding: 1.5rem;
+                gap: 1rem;
+            }
+            /* Add labels for mobile list view */
+            .list-row > div::before {
+                content: attr(data-label);
+                display: block;
+                font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;
+                text-transform: uppercase; letter-spacing: 0.05em;
+                margin-bottom: 0.25rem;
+            }
+        }
+        @media (max-width: 600px) {
+            .list-row { grid-template-columns: 1fr; } /* Single column on small screens */
+        }
+       
+        .list-row-main p { font-weight: 600; color: var(--text-primary); }
+        .list-row-main span { font-size: 0.9rem; color: var(--text-secondary); }
+        .list-row-info p { font-weight: 500; color: #334155; }
+        .list-row-actions { display: flex; gap: 0.5rem; }
+        .list-row-actions .btn { padding: 0.6rem 0.8rem; font-size: 0.8rem; width: auto; border-radius: 0.5rem; }
+        .list-row-actions .btn span { display: none; } /* Hide text, show icon only */
+        .list-row-actions .btn .fa-solid { margin-right: 0; }
+        @media (min-width: 600px) {
+            .list-row-actions .btn span { display: inline; }
+            .list-row-actions .btn .fa-solid { margin-right: 0.5rem; }
+            .list-row-actions .btn { width: 100%; }
+        }
+        @media (min-width: 900px) {
+            .list-row-actions { flex-direction: column; }
+        }
+        @media (min-width: 1100px) {
+            .list-row-actions { flex-direction: row; }
+        }
+ 
+        /* Absent List Specific */
+        .absent-header, .absent-row {
+            grid-template-columns: 1.2fr 1fr 1fr 1fr 0.8fr 1fr 0.8fr 0.8fr 1fr;
+            gap: 0.5rem;
+        }
+        @media (max-width: 900px) {
+            .absent-header { display: none; }
+            .absent-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+        }
+        @media (max-width: 600px) {
+            .absent-row { grid-template-columns: 1fr; }
+        }
+ 
+        .state-container { text-align: center; margin: 4rem auto; }
+        .loading-spinner {
+            height: 3rem; width: 3rem; margin: 0 auto 1rem;
+            border: 4px solid var(--brand-blue-light);
+            border-top-color: var(--brand-blue);
+            border-radius: 50%; animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+        }
+        .hidden { display: none !important; }
+ 
+        .message-box {
+            position: fixed;
+            bottom: -100px; /* Start off-screen */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--brand-blue-dark);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 20px var(--shadow-heavy);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            pointer-events: none;
+        }
+        .message-box.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-120px); /* Animate up */
+        }
+       
+        #load-more-container {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+        #load-more-container .btn {
+            width: auto;
+        }
+ 
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal.hidden {
+            display: none;
+        }
+        .modal-content {
+            position: relative;
+            max-width: 95%;
+            max-height: 95%;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+        #close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            width: auto;
+            height: auto;
+        }
+        #close-modal:hover {
+            color: var(--brand-red);
+        }
+ 
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes animatedGradient {
+            0% { background-position: 50% 0%; }
+            50% { background-position: 50% 100%; }
+            100% { background-position: 50% 0%; }
+        }
+       
+        @keyframes popIn {
+            0% { opacity: 0; transform: var(--pop-in-transform); filter: blur(5px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse-success {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { scale(1); }
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+ 
+        /* --- Sidebar Custom CSS (Converted from Tailwind) --- */
+        #sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 60;
+            width: 16rem; /* w-64 */
+            height: 100vh; /* h-full */
+            background-color: #ffffff; /* bg-white */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+            overflow-y: auto;
+        }
+ 
+        #sidebar > div {
+            padding: 1rem; /* p-4 */
+            border-bottom: 1px solid #e5e7eb; /* border-b */
+        }
+ 
+        #sidebar h2 {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: bold; /* font-bold */
+            color: #4f46e5; /* text-indigo-600 */
+        }
+ 
+        #sidebar nav {
+            padding: 1rem; /* p-4 */
+        }
+ 
+        #sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem; /* space-y-2 */
+        }
+ 
+        #sidebar li {
+            margin: 0;
+        }
+ 
+        #sidebar a {
+            display: flex; /* flex */
+            align-items: center; /* items-center */
+            padding: 0.5rem; /* p-2 */
+            font-size: 1rem; /* text-base */
+            font-weight: normal; /* font-normal */
+            color: #111827; /* text-gray-900 */
+            border-radius: 0.5rem; /* rounded-lg */
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+ 
+        #sidebar a:hover {
+            background-color: #f9fafb; /* hover:bg-gray-100 */
+        }
+ 
+        #sidebar a svg {
+            width: 1.5rem; /* w-6 h-6 */
+            height: 1.5rem;
+            color: #6b7280; /* text-gray-500 */
+            flex-shrink: 0;
+        }
+ 
+        #sidebar a span {
+            margin-left: 0.75rem; /* ml-3 */
+        }
+ 
+        /* Active link styles (inline classes converted) */
+        #sidebar a.bg-indigo-100 {
+            background-color: #eef2ff; /* bg-indigo-100 */
+        }
+ 
+        #sidebar a.text-indigo-700 {
+            color: #4f46e7; /* text-indigo-700 */
+        }
+ 
+        #sidebar a.font-semibold {
+            font-weight: 600; /* font-semibold */
+        }
+ 
+        #sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5); /* bg-black bg-opacity-50 */
+            z-index: 50; /* z-50 */
+            display: none; /* hidden */
+        }
+    </style>
+</head>
+<body>
+    <aside id="sidebar">
+        <div>
+            <h2>Dashboard Decks</h2>
+        </div>
+        <nav class="p-4">
+        <ul class="space-y-2" id="sidebar-nav">
+            <li>
+                <a href="../index.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100 ">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <span class="ml-3">DFLT Status Deck</span>
+                </a>
+            </li>
+
+            <li class="limited-access">
+                <a href="../decks/Benefeciary_status_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <span class="ml-3">Beneficiary Status</span>
+                </a>
+            </li>
+
+            <li class="limited-access">
+                <a href="../decks/DFLT_2_Soft_launch_Map.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                    <span class="ml-3">DFLT Mapping</span>
+                </a>
+            </li>
+
+            <li class="limited-access">
+                <a href="../decks/Trainings_Locations_Viewers.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 bg-indigo-100 text-indigo-700 font-semibold">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="ml-3">DFLT Session</span>
+                </a>
+            </li>
+
+            <li class="limited-access">
+                <a href="../decks/trainers_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    <span class="ml-3">Trainers Progress</span>
+                </a>
+            </li>
+
+            <li class="full-access">
+                <a href="../decks/ic_data_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    <span class="ml-3">IC Monitoring Deck</span>
+                </a>
+            </li>
+
+            <li class="full-access">
+                <a href="../decks/GRM Table.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    <span class="ml-3">GRM Analytics Table</span>
+                </a>
+            </li>
+
+            <li class="full-access">
+                <a href="../decks/duration_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="ml-3">Duration Analysis</span></a>
+            </li>
+
+            <li class="full-access">
+                <a href="../decks/trainer_report.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span class="ml-3">Trainer Report Deck</span></a>
+            </li>
+
+            <li class="full-access">
+                <a href="../decks/DFLT-Target Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                    <span class="ml-3">Target Achievement</span></a>
+            </li>
+
+            <li class="full-access">
+                <a href="../decks/DFLT_Visuals_Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                    <span class="ml-3">DFLT Visuals Deck</span></a>
+            </li>
+
+            <li class="full-access">
+                <a href="../decks/DFLT Pre-Post.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                    <span class="ml-3">DFLT Pre Post</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    </aside>
+    <div id="sidebar-overlay" class="hidden"></div>
+   
+    <div class="container">
+        <header class="glass-card header">
+            <div class="header-logo-group">
+                <img src="https://www.sdpi.org/assets/images/sdpi-logo-2020.webp" alt="SDPI Logo">
+            </div>
+            <h1>DFLT Sessions Locations</h1>
+            <p id="real-time-clock" class="clock">
+                <i class="fa-solid fa-spinner fa-spin"></i> Updating...
+            </p>
+        </header>
+ 
+        <div class="glass-card">
+            <div class="filters-grid">
+                <div class="input-group">
+                    <label for="search-input">Search by Trainer / Partner / Supervisor / CNIC</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                        <input type="text" id="search-input" placeholder="e.g., Iqra Liaqat, Saeed Ahmad, 61101-...">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="start-date">Start Date</label>
+                    <input type="date" id="start-date">
+                </div>
+                <div class="input-group">
+                    <label for="end-date">End Date</label>
+                    <input type="date" id="end-date">
+                </div>
+            </div>
+ 
+            <div class="filters-bottom-row">
+                <button id="reset-filters" class="btn btn-secondary" style="width: auto;">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>Reset All Filters</span>
+                </button>
+                <button id="absent-btn" class="btn btn-secondary" style="width: auto;">
+                    <i class="fa-solid fa-user-slash"></i>
+                    <span>Today's Absent</span>
+                </button>
+                <div class="view-toggle">
+                    <button id="view-cards-btn" class="btn active">
+                        <i class="fa-solid fa-grip"></i>
+                        <span>Card View</span>
+                    </button>
+                    <button id="view-list-btn" class="btn">
+                        <i class="fa-solid fa-list"></i>
+                        <span>List View</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+ 
+        <div id="loading" class="state-container">
+            <div class="loading-spinner"></div>
+            <p style="color: var(--text-secondary);">Loading session data...</p>
+        </div>
+ 
+        <div id="error" class="state-container hidden" role="alert">
+            <i class="fa-solid fa-triangle-exclamation" style="color: var(--error-color); font-size: 3rem;"></i>
+            <h2 style="font-weight: bold; color: var(--error-color); margin-top: 1rem;">Data Loading Failed</h2>
+            <p style="margin-top: 0.5rem; color: var(--text-secondary);">Could not fetch session data. Please ensure the file <strong style="color: var(--text-primary);">'bisp_dflt2.db'</strong> is in the root directory and you are running a local server.</p>
+        </div>
+ 
+        <main id="sessions-container-cards" class="sessions-grid"></main>
+ 
+        <div id="sessions-container-list" class="sessions-list hidden">
+            <div class="list-header">
+                <div>Location & Trainer</div>
+                <div>Submission Date</div>
+                <div>Partner & Supervisor</div>
+                <div>CNIC & Training Day</div>
+                <div>Actions</div>
+            </div>
+            </div>
+ 
+        <div id="load-more-container" class="hidden">
+            <button id="load-more-btn" class="btn btn-primary">
+                <i class="fa-solid fa-chevron-down"></i>
+                <span>Load More</span>
+            </button>
+        </div>
+ 
+    </div>
+ 
+    <div id="absent-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <button id="close-modal">&times;</button>
+            <h2 style="margin-bottom:1rem;"><i class="fa-solid fa-user-slash"></i> Today's Absent Trainers</h2>
+            <div id="absent-container" class="sessions-list"></div>
+            <div style="margin-top:1rem; text-align:center;">
+                <button id="export-absent-csv" class="btn btn-primary hidden">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Export as CSV</span>
+                </button>
+            </div>
+        </div>
+    </div>
+   
+    <div id="message-box" class="message-box"></div>
+ 
+    <script>
+        // Global database instance
+        // Configuration
+
+        const SESSIONS_PER_PAGE = 20;
+       
+        // DOM Elements
+        const cardContainer = document.getElementById('sessions-container-cards');
+        const listContainer = document.getElementById('sessions-container-list');
+        const loadingElement = document.getElementById('loading');
+        const errorElement = document.getElementById('error');
+        const searchInput = document.getElementById('search-input');
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const resetFiltersButton = document.getElementById('reset-filters');
+        const absentBtn = document.getElementById('absent-btn');
+        const messageBox = document.getElementById('message-box');
+        const clockElement = document.getElementById('real-time-clock');
+        const viewCardsBtn = document.getElementById('view-cards-btn');
+        const viewListBtn = document.getElementById('view-list-btn');
+        const loadMoreContainer = document.getElementById('load-more-container');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        const absentModal = document.getElementById('absent-modal');
+        const absentContainer = document.getElementById('absent-container');
+        const exportAbsentCsvBtn = document.getElementById('export-absent-csv');
+        const closeModalBtn = document.getElementById('close-modal');
+ 
+        // App State
+        let allSessionsData = [];
+        let allAbsentData = [];
+        let currentFilteredData = [];
+        let currentView = 'cards'; // 'cards' or 'list'
+        let visibleCount = SESSIONS_PER_PAGE;
+ 
+        // --- Utility Functions ---
+ 
+        function showMessage(message) {
+            messageBox.textContent = message;
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+ 
+        const debounce = (func, delay) => {
+            let timeout;
+            return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); };
+        };
+ 
+        const formatName = (name) => {
+            if (!name || name.trim() === '') return 'N/A';
+            return name.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        };
+ 
+        const safeGet = (session, key) => {
+            return (session[key] || '').toString().trim() || 'N/A';
+        };
+ 
+        function exportToCSV(data, filename) {
+            if (data.length === 0) {
+                showMessage('No data to export.');
+                return;
+            }
+            // Simple CSV export without XLSX
+            const headers = Object.keys(data[0]);
+            const csvContent = [
+                headers.join(','),
+                ...data.map(row => headers.map(header => JSON.stringify(row[header] || '')).join(','))
+            ].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+ 
+        // --- Data Fetching & Parsing ---
+ 
+        async function loadDataAndInitialize() {
+            loadingElement.classList.remove('hidden');
+            errorElement.classList.add('hidden');
+            cardContainer.innerHTML = '';
+            listContainer.innerHTML = '';
+            try {
+                // Load sessions data
+                const [allSessionsRows, allTrainersRows] = await Promise.all([
+                    fetch('/api/sessions').then(r => r.json()),
+                    fetch('/api/trainers').then(r => r.json())
+                ]);
+                allSessionsData = allSessionsRows.filter(session => session.session_id && session.session_id.toString().trim() !== '');
+
+                // Compute today's absents
+                const today = new Date().toISOString().split('T')[0];
+                const attendees = new Set(
+                    allSessionsRows
+                        .filter(r => (r.SubmissionDate || '').toString().substring(0, 10) === today)
+                        .map(r => r.trainer_name)
+                        .filter(Boolean)
+                );
+                allAbsentData = allTrainersRows.filter(row => !attendees.has(row.trainer_name));
+                loadingElement.classList.add('hidden');
+                filterAndRenderSessions();
+            } catch (e) {
+                console.error('Failed to load or parse DB:', e);
+                loadingElement.classList.add('hidden');
+                errorElement.classList.remove('hidden');
+            }
+        }
+ 
+        // --- Filtering & Rendering Logic ---
+ 
+        function filterAndRenderSessions() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
+            const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
+            if (startDate) startDate.setHours(0,0,0,0);
+            if (endDate) endDate.setHours(23,59,59,999);
+ 
+            let filtered = allSessionsData.filter(session => {
+                const searchMatch = [
+                    session.trainer_name,
+                    session.pair,
+                    session.assigned_ic,
+                     session.trainer_cnic
+                ].some(field => field && field.toString().toLowerCase().includes(searchTerm));
+               
+                let dateMatch = true;
+                const submissionDate = session.SubmissionDate ? new Date(session.SubmissionDate) : null;
+               
+                if ((startDate && (!submissionDate || submissionDate < startDate)) ||
+                    (endDate && (!submissionDate || submissionDate > endDate))) {
+                    dateMatch = false;
+                }
+                return searchMatch && dateMatch;
+            });
+
+            // Deduplicate by trainer_name, keeping the first occurrence (newest since data is ordered DESC)
+            const seenTrainers = new Set();
+            currentFilteredData = filtered.filter(session => {
+                if (seenTrainers.has(session.trainer_name)) {
+                    return false;
+                }
+                seenTrainers.add(session.trainer_name);
+                return true;
+            });
+ 
+            // *** NEW LOGIC: Reset count, but if searching, show all ***
+            visibleCount = SESSIONS_PER_PAGE;
+            if (searchTerm.length > 0) {
+                visibleCount = currentFilteredData.length; // Show all results for a search
+            }
+           
+            renderVisibleSessions();
+        }
+ 
+        function renderAbsent() {
+            const exportBtn = document.getElementById('export-absent-csv');
+            if (allAbsentData.length === 0) {
+                absentContainer.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-secondary);">No absent trainers today.</div>';
+                exportBtn.classList.add('hidden');
+                return;
+            }
+            exportBtn.classList.remove('hidden');
+ 
+            absentContainer.innerHTML = `
+                <div class="list-header absent-header">
+                    <div>Name</div>
+                    <div>CNIC</div>
+                    <div>Partner</div>
+                    <div>SDPI-IC</div>
+                    <div>Province</div>
+                    <div>District</div>
+                    <div>Tehsil</div>
+                    <div>Duty Station</div>
+                    <div>Phone</div>
+                </div>
+            `;
+ 
+            allAbsentData.forEach((absent, index) => {
+                const row = document.createElement('div');
+                row.className = 'list-row absent-row';
+                row.style.animationDelay = `${index * 0.03}s`;
+                row.innerHTML = `
+                    <div class="list-row-info" data-label="Name"><p>${formatName(safeGet(absent, 'trainer_name'))}</p></div>
+                    <div class="list-row-info" data-label="CNIC"><p>${safeGet(absent, 'trainer_cnic')}</p></div>
+                    <div class="list-row-info" data-label="Partner"><p>${formatName(safeGet(absent, 'pair'))}</p></div>
+                    <div class="list-row-info" data-label="SDPI-IC"><p>${formatName(safeGet(absent, 'assigned_ic'))}</p></div>
+                    <div class="list-row-info" data-label="Province"><p>${safeGet(absent, 'province')}</p></div>
+                    <div class="list-row-info" data-label="District"><p>${safeGet(absent, 'district')}</p></div>
+                    <div class="list-row-info" data-label="Tehsil"><p>${safeGet(absent, 'tehsil')}</p></div>
+                    <div class="list-row-info" data-label="Duty Station"><p>${safeGet(absent, 'duty_station')}</p></div>
+                     <div class="list-row-info" data-label="Phone"><p>${safeGet(absent, 'trainer_ph_number')}</p></div>
+                `;
+                absentContainer.appendChild(row);
+            });
+        }
+ 
+        // Main render dispatcher
+        function renderVisibleSessions() {
+            // Get the slice of data to render
+            const sessionsToRender = currentFilteredData.slice(0, visibleCount);
+ 
+            // Clear both containers
+            cardContainer.innerHTML = '';
+            // Clear list view but keep header
+            listContainer.innerHTML = `
+                <div class="list-header">
+                    <div>Location & Trainer</div>
+                    <div>Submission Date</div>
+                    <div>Partner & Supervisor</div>
+                    <div>CNIC & Training Day</div>
+                    <div>Actions</div>
+                </div>`;
+ 
+            if (sessionsToRender.length === 0) {
+                const noResultsMsg = `<div class="glass-card no-hover" style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); font-weight: 500; font-style: italic; padding: 2rem;">No sessions found matching your filters.</div>`;
+                cardContainer.innerHTML = noResultsMsg;
+                listContainer.innerHTML = noResultsMsg; // Show message in list view too
+            } else {
+                // Call the correct render function based on view
+                if (currentView === 'cards') {
+                    renderSessionsAsCards(sessionsToRender);
+                } else {
+                    renderSessionsAsList(sessionsToRender);
+                }
+            }
+ 
+            // Update "Load More" button visibility
+            if (visibleCount < currentFilteredData.length) {
+                loadMoreContainer.classList.remove('hidden');
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
+        }
+ 
+        // --- Render Function 1: CARD VIEW ---
+        function renderSessionsAsCards(sessions) {
+            sessions.forEach((session, index) => {
+                // --- 1. Parse Location and create Map link ---
+                let googleMapsUrl = '#';
+                let coordinatesForCopy = '';
+                let hasLocation = false;
+               
+                const lat = safeGet(session, 'session_location-Latitude');
+                const long = safeGet(session, 'session_location-Longitude');
+ 
+                if (lat !== 'N/A' && long !== 'N/A' && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(long))) {
+                coordinatesForCopy = `${lat},${long}`;
+                googleMapsUrl = `https://www.google.com/maps?q=${lat},${long}`;
+                hasLocation = true;
+        }
+               
+                // --- 2. Format data from NEW CSV structure ---
+                const locationText = `${safeGet(session, 'province')} - ${safeGet(session, 'district')} - ${safeGet(session, 'tehsil')}`;
+                const trainerText = formatName(session.trainer_name);
+                const trainerCnic = safeGet(session, 'trainer_cnic');
+                const partnerName = formatName(session.pair);
+                const supervisorName = formatName(session.assigned_ic);
+               
+                const submissionDateRaw = session.SubmissionDate ? new Date(session.SubmissionDate) : null;
+                const formattedDate = submissionDateRaw && !isNaN(submissionDateRaw)
+                    ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric' }).format(submissionDateRaw)
+                    : 'N/A';
+               
+                const dayOfTraining = safeGet(session, 'today_date_display');
+               
+                // --- 3. Build the new card HTML ---
+                const card = document.createElement('div');
+                card.className = 'glass-card';
+                card.style.opacity = 0;
+                card.style.animation = `popIn 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${index * 0.05}s forwards`;
+               
+                card.innerHTML = `
+                    <div class="session-card-content">
+                        <div class="card-header">
+                            <span><i class="fa-solid fa-location-dot"></i> Location</span>
+                            <p>${locationText}</p>
+                        </div>
+                       
+                        <div class="card-details-grid">
+                            <div><span>Trainer</span><p>${trainerText}</p></div>
+                            <div><span>Trainer CNIC</span><p>${trainerCnic}</p></div>
+                            <div><span>Partner</span><p>${partnerName}</p></div>
+                            <div><span>SDPI-IC</span><p>${supervisorName}</p></div>
+                           
+                            <div><span>Submission Date</span><p>${formattedDate}</p></div>
+                        </div>
+                    </div>
+                   
+                    <div class="session-card-footer">
+                        <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary ${!hasLocation ? 'btn-disabled' : ''}">
+                            <i class="fa-solid fa-map-pin"></i><span>View on Map</span></a>
+                        <button class="btn btn-secondary ${!hasLocation ? 'btn-disabled' : ''}" data-coordinates="${coordinatesForCopy}">
+                            <i class="fa-solid fa-copy"></i><span>Copy Coordinates</span></button>
+                    </div>`;
+               
+                cardContainer.appendChild(card);
+            });
+        }
+ 
+        // --- Render Function 2: LIST VIEW ---
+        function renderSessionsAsList(sessions) {
+            sessions.forEach((session, index) => {
+                // --- 1. Parse Location and create Map link ---
+                let googleMapsUrl = '#';
+                let coordinatesForCopy = '';
+                let hasLocation = false;
+               
+                const lat = safeGet(session, 'session_location-Latitude');
+                const long = safeGet(session, 'session_location-Longitude');
+ 
+                if (lat !== 'N/A' && long !== 'N/A' && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(long))) {
+                coordinatesForCopy = `${lat},${long}`;
+                googleMapsUrl = `https://www.google.com/maps?q=${lat},${long}`;
+                hasLocation = true;
+        }
+               
+                // --- 2. Format data (same as card) ---
+                const locationText = `${safeGet(session, 'district')}, ${safeGet(session, 'tehsil')}`;
+                const trainerText = formatName(session.trainer_name);
+                const trainerCnic = safeGet(session, 'trainer_cnic');
+                const partnerName = formatName(session.pair);
+                const supervisorName = formatName(session.assigned_ic);
+               
+                const submissionDateRaw = session.SubmissionDate ? new Date(session.SubmissionDate) : null;
+                const formattedDate = submissionDateRaw && !isNaN(submissionDateRaw)
+                    ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(submissionDateRaw)
+                    : 'N/A';
+               
+                const dayOfTraining = safeGet(session, 'today_date_display');
+ 
+                // --- 3. Build the new list row HTML ---
+                const row = document.createElement('div');
+                row.className = 'list-row';
+                row.style.animationDelay = `${index * 0.03}s`;
+ 
+                row.innerHTML = `
+                    <div class="list-row-main" data-label="Location & Trainer">
+                        <p>${trainerText}</p>
+                        <span><i class="fa-solid fa-location-dot" style="margin-right: 0.25rem;"></i> ${locationText}</span>
+                    </div>
+                    <div class="list-row-info" data-label="Submission Date">
+                        <p>${formattedDate}</p>
+                    </div>
+                    <div class="list-row-info" data-label="Partner & SDPI-IC">
+                        <p>Partner: ${partnerName}</p>
+                        <p>SDPI-IC: ${supervisorName}</p>
+                    </div>
+                    <div class="list-row-info" data-label="CNIC & Training Day">
+                        <p>CNIC: ${trainerCnic}</p>
+                        <p>Day: ${dayOfTraining} </p>
+                    </div>
+                    <div class="list-row-actions" data-label="Actions">
+                        <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary ${!hasLocation ? 'btn-disabled' : ''}">
+                            <i class="fa-solid fa-map-pin"></i><span>Map</span></a>
+                        <button class="btn btn-secondary ${!hasLocation ? 'btn-disabled' : ''}" data-coordinates="${coordinatesForCopy}">
+                            <i class="fa-solid fa-copy"></i><span>Copy</span></button>
+                    </div>
+                `;
+                listContainer.appendChild(row);
+            });
+        }
+       
+        // --- Clock & Clipboard --- 
+       
+        function updateClock() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
+            const formattedDate = now.toLocaleString('en-US', options);
+            clockElement.textContent = formattedDate;
+        }
+       
+        function handleClockUpdate() {
+            clockElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+            clockElement.classList.add('clock-updating');
+ 
+            setTimeout(() => {
+                updateClock();
+                clockElement.classList.remove('clock-updating');
+            }, 500);
+        }
+ 
+        async function copyToClipboard(text, button) {
+            if (!text || button.classList.contains('btn-disabled')) return;
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalIcon = button.querySelector('i').className;
+                const originalText = button.querySelector('span').textContent;
+                button.classList.add('copied');
+                button.innerHTML = `<i class="fa-solid fa-check"></i><span>Copied!</span>`;
+                setTimeout(() => {
+                    button.classList.remove('copied');
+                    button.innerHTML = `<i class="${originalIcon}"></i><span>${originalText}</span>`;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text:', err);
+                showMessage("Could not copy to clipboard.");
+            }
+        }
+ 
+        // --- Event Listeners ---
+       
+        // Filters
+        searchInput.addEventListener('input', debounce(filterAndRenderSessions, 300));
+        startDateInput.addEventListener('change', filterAndRenderSessions);
+        endDateInput.addEventListener('change', filterAndRenderSessions);
+ 
+        resetFiltersButton.addEventListener('click', () => {
+            searchInput.value = '';
+            startDateInput.value = '';
+            endDateInput.value = '';
+            filterAndRenderSessions();
+            showMessage("Filters Reset");
+        });
+ 
+        // Absent Modal
+        absentBtn.addEventListener('click', () => {
+            renderAbsent();
+            absentModal.classList.remove('hidden');
+        });
+ 
+        closeModalBtn.addEventListener('click', () => {
+            absentModal.classList.add('hidden');
+        });
+ 
+        absentModal.addEventListener('click', (e) => {
+            if (e.target === absentModal) {
+                absentModal.classList.add('hidden');
+            }
+        });
+ 
+        exportAbsentCsvBtn.addEventListener('click', () => {
+            exportToCSV(allAbsentData, 'todays_absent.csv');
+        });
+ 
+        // View Toggles
+        viewCardsBtn.addEventListener('click', () => {
+            currentView = 'cards';
+            viewCardsBtn.classList.add('active');
+            viewListBtn.classList.remove('active');
+            cardContainer.classList.remove('hidden');
+            listContainer.classList.add('hidden');
+            renderVisibleSessions(); // Re-render in the new view
+        });
+ 
+        viewListBtn.addEventListener('click', () => {
+            currentView = 'list';
+            viewListBtn.classList.add('active');
+            viewCardsBtn.classList.remove('active');
+            listContainer.classList.remove('hidden');
+            cardContainer.classList.add('hidden');
+            renderVisibleSessions(); // Re-render in the new view
+        });
+ 
+        // Load More
+        loadMoreBtn.addEventListener('click', () => {
+            visibleCount += SESSIONS_PER_PAGE;
+            renderVisibleSessions();
+        });
+ 
+        // Event delegation for "Copy" buttons (works for both views)
+        document.body.addEventListener('click', (event) => {
+            const button = event.target.closest('.btn-secondary[data-coordinates]');
+            if (button) 
+            {
+                copyToClipboard(button.dataset.coordinates, button);
+            }
+        });
+       
+        // Initial page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (sessionStorage.getItem('isVerified') !== 'true') {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            await loadDataAndInitialize();
+            updateClock();
+            setInterval(handleClockUpdate, 300000);
+        });
+    </script>
+</body>
+</html>

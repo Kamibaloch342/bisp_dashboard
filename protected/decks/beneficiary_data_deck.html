@@ -1,0 +1,734 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PSP · Beneficiary Data Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Montserrat','sans-serif'] } } }
+    }
+  </script>
+  <style>
+    body { background:#f0f4f8; }
+    #left-sidebar {
+      position:fixed; inset:0 auto 0 0; width:76px;
+      background:#fff; border-right:1px solid #e5e7eb;
+      box-shadow:2px 0 15px rgba(0,0,0,0.04);
+      transition:width 0.35s ease; overflow:hidden; z-index:50;
+    }
+    #left-sidebar .sidebar-content { opacity:0; transition:opacity 0.25s ease 0.08s; }
+    #left-sidebar:hover { width:280px; }
+    #left-sidebar:hover .sidebar-content { opacity:1; }
+    @media(max-width:1023px){
+      #left-sidebar { transform:translateX(-100%); width:280px !important; }
+      #left-sidebar.mobile-open { transform:translateX(0); }
+    }
+    #sidebar-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:40; display:none; }
+    #sidebar-overlay.active { display:block; }
+
+    /* Filters panel */
+    .filter-chip {
+      display:inline-flex; align-items:center; gap:6px;
+      background:#f1f5f9; border:1px solid #e2e8f0;
+      padding:4px 10px; border-radius:99px;
+      font-size:11px; font-weight:600; color:#475569;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .filter-chip:hover { background:#e0e7ff; border-color:#a5b4fc; color:#4f46e5; }
+    .filter-chip.active { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+
+    /* Table */
+    #data-table th {
+      position:sticky; top:0; background:#f8fafc;
+      font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;
+      color:#64748b; padding:8px 10px; white-space:nowrap; z-index:10;
+      border-bottom:2px solid #e2e8f0;
+    }
+    #data-table td {
+      font-size:11.5px; padding:7px 8px; color:#334155;
+      border-bottom:1px solid #f1f5f9; white-space:nowrap; max-width:160px;
+      overflow:hidden; text-overflow:ellipsis;
+    }
+    #data-table tr:hover td { background:#f8fafc; }
+    .badge {
+      display:inline-block; padding:2px 8px; border-radius:99px;
+      font-size:10px; font-weight:700;
+    }
+    .badge-verified   { background:#dcfce7; color:#16a34a; }
+    .badge-pending    { background:#fef9c3; color:#ca8a04; }
+    .badge-notverified{ background:#fee2e2; color:#dc2626; }
+    .badge-day2       { background:#dbeafe; color:#2563eb; }
+    .badge-day1       { background:#f1f5f9; color:#64748b; }
+    select, input[type=text], input[type=date] {
+      background:#fff; border:1px solid #e2e8f0; border-radius:8px;
+      font-family:Montserrat,sans-serif; font-size:12px; color:#334155;
+      padding:7px 10px; outline:none; transition:border 0.15s;
+    }
+    select:focus, input:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.1); }
+    .pager-btn {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0;
+      background:#fff; cursor:pointer; font-size:13px; font-weight:700;
+      color:#475569; transition:all 0.15s;
+    }
+    .pager-btn:hover:not(:disabled) { background:#4f46e5; color:#fff; border-color:#4f46e5; }
+    .pager-btn:disabled { opacity:0.35; cursor:not-allowed; }
+    .pager-btn.active { background:#4f46e5; color:#fff; border-color:#4f46e5; }
+    .section-card { background:#fff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+    .kpi-card { background:#fff; border-radius:12px; border:1px solid #e2e8f0; padding:18px 22px; }
+
+    /* Photo hover popup */
+    #img-preview {
+      position:fixed; z-index:9999; pointer-events:none;
+      background:#fff; border-radius:12px;
+      box-shadow:0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12);
+      padding:6px; border:2px solid #e2e8f0;
+      display:none; max-width:320px;
+    }
+    #img-preview img {
+      display:block; max-width:308px; max-height:380px;
+      border-radius:8px; object-fit:contain;
+    }
+    #img-preview .img-loading {
+      width:220px; height:180px; display:flex; align-items:center; justify-content:center;
+      color:#94a3b8; font-size:13px; font-weight:600;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Mobile menu -->
+<button id="mobile-menu-btn" class="lg:hidden fixed top-4 left-4 z-50 bg-white p-2.5 rounded-xl shadow-md">
+  <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+  </svg>
+</button>
+
+<!-- Sidebar -->
+<aside id="left-sidebar">
+  <div class="sidebar-content p-5 h-full flex flex-col">
+    <div class="border-b pb-4 mb-6 flex justify-between items-center">
+      <h2 class="text-xl font-bold text-indigo-600">Decks</h2>
+      <button id="close-sidebar-btn" class="lg:hidden text-gray-700">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="flex-1">
+      <ul class="space-y-1.5">
+        <li><a href="../index.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg><span class="ml-3">DFLT Status Deck</span></a></li>
+        <li><a href="../decks/Benefeciary_status_deck.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg><span class="ml-3">Beneficiary Status</span></a></li>
+        <li><a href="../decks/beneficiary_data_deck.html" class="flex items-center p-2 text-base font-normal rounded-lg bg-indigo-100 text-indigo-700 font-semibold"><svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h18M3 18h18"/></svg><span class="ml-3">Beneficiary Data</span></a></li>
+        <li><a href="../decks/DFLT_2_Soft_launch_Map.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg><span class="ml-3">DFLT Mapping</span></a></li>
+        <li><a href="../decks/Trainings_Locations_Viewers.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><span class="ml-3">DFLT Session</span></a></li>
+        <li><a href="../decks/trainers_deck.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg><span class="ml-3">Trainers Progress</span></a></li>
+        <li><a href="../decks/ic_data_deck.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg><span class="ml-3">IC Monitoring</span></a></li>
+        <li><a href="../decks/DFLT-Target Deck.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg><span class="ml-3">Target Achievement</span></a></li>
+        <li><a href="../decks/DFLT_Visuals_Deck.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100"><svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg><span class="ml-3">DFLT Visuals</span></a></li>
+      </ul>
+    </nav>
+  </div>
+</aside>
+
+<div id="sidebar-overlay"></div>
+
+<main class="lg:ml-[76px] p-5 md:p-8">
+
+  <!-- Header -->
+  <div class="max-w-full mx-auto mb-6 pr-2">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <div>
+        <div class="text-xs font-bold tracking-widest text-indigo-500 uppercase mb-1">Data Explorer</div>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Beneficiary Registration Data</h1>
+        <p class="text-sm text-slate-500 mt-1">Live view of all registration records — use filters to drill down</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-right text-xs text-slate-400">
+          <div>Last updated: <span id="last-updated-lbl" class="font-bold text-slate-600">—</span></div>
+        </div>
+        <button id="export-btn" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-full mx-auto space-y-5 pr-2">
+
+    <!-- KPI summary strip -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="kpi-strip">
+      <div class="kpi-card">
+        <div class="text-xs font-bold uppercase tracking-widest text-slate-400">Matching Records</div>
+        <div class="text-3xl font-extrabold text-indigo-600 mt-2" id="kpi-total">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="text-xs font-bold uppercase tracking-widest text-slate-400">Day 2 Attendance</div>
+        <div class="text-3xl font-extrabold text-sky-600 mt-2" id="kpi-day2">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="text-xs font-bold uppercase tracking-widest text-slate-400">Verified</div>
+        <div class="text-3xl font-extrabold text-emerald-600 mt-2" id="kpi-verified">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="text-xs font-bold uppercase tracking-widest text-slate-400">Showing (current page)</div>
+        <div class="text-3xl font-extrabold text-slate-700 mt-2" id="kpi-page">—</div>
+      </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="section-card">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <h2 class="font-bold text-slate-800 flex items-center gap-2">
+          <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+          Filters
+        </h2>
+        <button id="clear-filters-btn" class="text-xs font-bold text-rose-500 hover:text-rose-700 transition-colors">Clear All</button>
+      </div>
+      <div class="p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        <!-- Row 1: Programme filters -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Phase</label>
+          <select id="f-phase" class="w-full"><option value="all">All Phases</option></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Province</label>
+          <select id="f-province" class="w-full"><option value="all">All Provinces</option></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">District</label>
+          <select id="f-district" class="w-full"><option value="all">All Districts</option></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Zones</label>
+          <select id="f-zones" class="w-full"><option value="all">All Zones</option></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Trainer</label>
+          <select id="f-trainer" class="w-full"><option value="all">All Trainers</option></select>
+        </div>
+        <!-- Row 2: Status filters -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Day 2 Status</label>
+          <select id="f-attendance" class="w-full">
+            <option value="all">All</option>
+            <option value="1">Attended Day 2</option>
+            <option value="0">Day 1 Only</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Verified Status</label>
+          <select id="f-verified" class="w-full"><option value="all">All Statuses</option></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Education</label>
+          <select id="f-education" class="w-full"><option value="all">All Levels</option></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Occupation</label>
+          <select id="f-occupation" class="w-full"><option value="all">All Occupations</option></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Own Phone</label>
+          <select id="f-own_phone" class="w-full">
+            <option value="all">All</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Has Bank Acc.</label>
+          <select id="f-bank" class="w-full">
+            <option value="all">All</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Mobile Money</label>
+          <select id="f-mobile" class="w-full">
+            <option value="all">All</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Taken Loan</label>
+          <select id="f-loan" class="w-full">
+            <option value="all">All</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Living Arr.</label>
+          <select id="f-living" class="w-full"><option value="all">All</option></select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Eco. Activity</label>
+          <select id="f-economic" class="w-full"><option value="all">All</option></select>
+        </div>
+        <!-- Date range -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date From</label>
+          <input type="date" id="f-date-from" class="w-full"/>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date To</label>
+          <input type="date" id="f-date-to" class="w-full"/>
+        </div>
+        <!-- Search spanning wider -->
+        <div class="col-span-2 sm:col-span-3 lg:col-span-2">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Search Name / CNIC</label>
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+            <input type="text" id="f-search" placeholder="Type name or CNIC…" class="w-full pl-8"/>
+          </div>
+        </div>
+        <!-- Rows per page -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Rows / Page</label>
+          <select id="f-limit" class="w-full">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+          </select>
+        </div>
+      </div>
+      <!-- Active filter chips -->
+      <div id="active-chips" class="px-5 pb-4 flex flex-wrap gap-2 hidden"></div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="section-card overflow-hidden">
+      <!-- Table header row -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div class="text-sm font-bold text-slate-700" id="result-count">Loading…</div>
+        <div class="flex items-center gap-2" id="pager-top"></div>
+      </div>
+
+      <!-- Scrollable table -->
+      <div class="overflow-x-auto" style="max-height:64vh; overflow-y:auto;">
+        <table id="data-table" class="w-full border-collapse">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Phase</th>
+              <th>Province</th>
+              <th>District</th>
+              <th>Tehsil</th>
+              <th>Trainer</th>
+              <th>Beneficiary Name</th>
+              <th>CNIC</th>
+              <th>Age</th>
+              <th>Education</th>
+              <th>Occupation</th>
+              <th>Income</th>
+              <th>Savings</th>
+              <th>Eco. Activity</th>
+              <th>Day 2</th>
+              <th>Status</th>
+              <th>Audit</th>
+              <th>CNIC Photo</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr><td colspan="19" class="text-center py-12 text-slate-400">Loading data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pager bottom -->
+      <div class="flex items-center justify-between px-6 py-4 border-t border-slate-100">
+        <div class="text-xs text-slate-400 font-bold" id="pager-info">—</div>
+        <div class="flex items-center gap-1.5" id="pager-bottom"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────
+let STATE = { page: 1, total: 0, pages: 0, limit: 50 };
+let filterOpts = {};
+let searchTimer = null;
+
+// ─── Sidebar ──────────────────────────────────────────────────────
+(function(){
+  const sb  = document.getElementById('left-sidebar');
+  const ov  = document.getElementById('sidebar-overlay');
+  const mb  = document.getElementById('mobile-menu-btn');
+  const cb  = document.getElementById('close-sidebar-btn');
+  mb?.addEventListener('click', ()=>{ sb.classList.add('mobile-open'); ov.classList.add('active'); });
+  cb?.addEventListener('click', close); ov?.addEventListener('click', close);
+  function close(){ sb.classList.remove('mobile-open'); ov.classList.remove('active'); }
+})();
+
+// ─── Collect current filter params ───────────────────────────────
+function getParams(forExport = false) {
+  const p = new URLSearchParams();
+  if (!forExport) {
+    p.set('page',  STATE.page);
+    p.set('limit', document.getElementById('f-limit').value);
+  } else {
+    p.set('page',  1);
+    p.set('limit', 10000);
+  }
+  const maps = {
+    'f-phase':'phase', 'f-province':'province', 'f-district':'district',
+    'f-zones':'zones', 'f-trainer':'trainer', 'f-attendance':'attendance',
+    'f-verified':'verified', 'f-education':'education', 'f-occupation':'occupation',
+    'f-own_phone':'own_phone', 'f-bank':'bank', 'f-mobile':'mobile',
+    'f-loan':'loan', 'f-living':'living', 'f-economic':'economic'
+  };
+  Object.entries(maps).forEach(([id, qp]) => {
+    const v = document.getElementById(id)?.value || 'all';
+    if (v && v.toLowerCase() !== 'all') p.set(qp, v);
+  });
+  const df = document.getElementById('f-date-from')?.value;
+  const dt = document.getElementById('f-date-to')?.value;
+  const sr = document.getElementById('f-search')?.value?.trim();
+  if (df) p.set('date_from', df);
+  if (dt) p.set('date_to',   dt);
+  if (sr) p.set('search',    sr);
+  return p;
+}
+
+// ─── Render pager ────────────────────────────────────────────────
+function renderPager(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const { page, pages } = STATE;
+
+  const btn = (label, pg, active=false, disabled=false) =>
+    `<button class="pager-btn${active?' active':''}${disabled?' opacity-30 pointer-events-none':''}"
+      onclick="goPage(${pg})" ${disabled?'disabled':''}>${label}</button>`;
+
+  let html = btn('«', 1, false, page <= 1) + btn('‹', page-1, false, page <= 1);
+
+  // Show window of 5 pages
+  const start = Math.max(1, page - 2);
+  const end   = Math.min(pages, start + 4);
+  for (let i = start; i <= end; i++) html += btn(i, i, i === page);
+  if (end < pages) { if (end < pages-1) html += `<span class="text-slate-400 px-1 text-xs">…</span>`; html += btn(pages, pages); }
+
+  html += btn('›', page+1, false, page >= pages) + btn('»', pages, false, page >= pages);
+  el.innerHTML = html;
+}
+
+// ─── Fetch & render data ─────────────────────────────────────────
+async function fetchData() {
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '<tr><td colspan="22" class="text-center py-12"><div class="inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div></td></tr>';
+
+  const params = getParams();
+  try {
+    const res  = await fetch('/api/bene-records?' + params.toString());
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+
+    STATE.total = data.total;
+    STATE.page  = data.page;
+    STATE.pages = data.pages;
+    STATE.limit = data.limit;
+
+    document.getElementById('result-count').textContent =
+      `${data.total.toLocaleString()} records found — Page ${data.page} of ${data.pages}`;
+    document.getElementById('kpi-total').textContent = data.total.toLocaleString();
+    document.getElementById('kpi-page').textContent = data.rows.length.toLocaleString();
+    document.getElementById('pager-info').textContent =
+      `Showing ${((data.page-1)*data.limit+1).toLocaleString()}–${Math.min(data.page*data.limit, data.total).toLocaleString()} of ${data.total.toLocaleString()}`;
+
+    // KPIs from full filtered dataset (server-computed)
+    document.getElementById('kpi-day2').textContent     = (data.day2_count    || 0).toLocaleString();
+    document.getElementById('kpi-verified').textContent = (data.verified_count || 0).toLocaleString();
+
+    renderPager('pager-top');
+    renderPager('pager-bottom');
+    renderRows(data.rows, (data.page-1)*data.limit);
+    updateChips();
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="22" class="text-center py-8 text-rose-500 font-bold">${err.message}</td></tr>`;
+    console.error(err);
+  }
+}
+
+function renderRows(rows, offset) {
+  const tbody = document.getElementById('table-body');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="19" class="text-center py-12 text-slate-400 font-semibold">No records match the selected filters.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => {
+    const vStatus = (r.verified_retention_status || '').toLowerCase();
+    const vBadge  = vStatus === 'verified'
+      ? `<span class="badge badge-verified">Verified</span>`
+      : vStatus.includes('not')
+        ? `<span class="badge badge-notverified">Not Verified</span>`
+        : `<span class="badge badge-pending">${r.verified_retention_status || '—'}</span>`;
+
+    const attBadge = String(r.attendance_status) === '1'
+      ? `<span class="badge badge-day2">Day 2</span>`
+      : `<span class="badge badge-day1">Day 1</span>`;
+
+    const fmt = v => v && String(v).trim() ? String(v).trim().replace(/_/g,' ') : '—';
+    const fmtNum = v => {
+      const n = parseFloat(v);
+      return isNaN(n) ? '—' : n.toLocaleString('en-PK', { maximumFractionDigits: 0 });
+    };
+    const yn = v => {
+      const l = (v||'').toLowerCase();
+      if (l==='yes') return `<span class="badge badge-verified">Yes</span>`;
+      if (l==='no')  return `<span class="badge badge-notverified">No</span>`;
+      return `<span class="text-slate-400">—</span>`;
+    };
+
+    return `<tr>
+      <td class="text-slate-400 font-mono text-[11px]">${(offset+i+1).toLocaleString()}</td>
+      <td class="font-mono text-[11px]">${fmt(r.SubmissionDate)}</td>
+      <td><span class="badge" style="background:#ede9fe;color:#6d28d9">${fmt(r.dflt_phase)}</span></td>
+      <td>${fmt(r.province)}</td>
+      <td>${fmt(r.district)}</td>
+      <td>${fmt(r.tehsil)}</td>
+      <td class="font-medium">${fmt(r.trainer_name)}</td>
+      <td class="font-semibold text-slate-800">${fmt(r.beneficiary_name)}</td>
+      <td class="font-mono text-[11px]">${fmt(r.beneficiary_cnic)}</td>
+      <td class="text-center">${fmt(r.age)}</td>
+      <td>${fmt(r.education)}</td>
+      <td>${fmt(r.occupation)}</td>
+      <td class="font-mono text-xs text-right">PKR ${fmtNum(r.household_income)}</td>
+      <td class="font-mono text-xs text-right">PKR ${fmtNum(r.avg_savings)}</td>
+      <td>${fmt(r.economic_activity)}</td>
+      <td>${attBadge}</td>
+      <td>${vBadge}</td>
+      <td>${r.session_audit && r.session_audit.trim() ? `<a href="/api/surveycto-proxy?url=${encodeURIComponent(r.session_audit.trim())}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;background:#ede9fe;color:#6d28d9;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap;">&#127909; Audit</a>` : '<span class="text-slate-300">—</span>'}</td>
+      <td>${r.collective_bene_cnic_photo && r.collective_bene_cnic_photo.trim() ? `<span class="photo-btn" data-url="/api/surveycto-proxy?url=${encodeURIComponent(r.collective_bene_cnic_photo.trim())}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;background:#f0fdf4;color:#16a34a;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">&#128248; Photo</span>` : '<span class="text-slate-300">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Active filter chips ─────────────────────────────────────────
+const CHIP_LABELS = {
+  phase:'Phase', province:'Province', district:'District', zones:'Zones',
+  trainer:'Trainer', attendance:'Day 2', verified:'Status', education:'Education',
+  occupation:'Occupation', own_phone:'Own Phone', bank:'Bank', mobile:'Mobile Money',
+  loan:'Loan', living:'Living', economic:'Eco. Activity',
+  date_from:'From', date_to:'To', search:'Search'
+};
+function updateChips() {
+  const params = getParams();
+  const container = document.getElementById('active-chips');
+  const chips = [];
+  CHIP_LABELS && Object.entries(CHIP_LABELS).forEach(([k, label]) => {
+    const v = params.get(k);
+    if (v) chips.push(`<span class="filter-chip active">${label}: ${v} <span class="ml-1 cursor-pointer" onclick="clearFilter('${k}')">×</span></span>`);
+  });
+  if (chips.length) {
+    container.innerHTML = chips.join('');
+    container.classList.remove('hidden');
+  } else {
+    container.classList.add('hidden');
+  }
+}
+function clearFilter(key) {
+  const idMap = {
+    phase:'f-phase', province:'f-province', district:'f-district', zones:'f-zones',
+    trainer:'f-trainer', attendance:'f-attendance', verified:'f-verified',
+    education:'f-education', occupation:'f-occupation', own_phone:'f-own_phone',
+    bank:'f-bank', mobile:'f-mobile', loan:'f-loan', living:'f-living', economic:'f-economic',
+    date_from:'f-date-from', date_to:'f-date-to', search:'f-search'
+  };
+  const el = document.getElementById(idMap[key]);
+  if (!el) return;
+  if (el.tagName === 'SELECT') el.value = el.options[0].value;
+  else el.value = '';
+  STATE.page = 1;
+  fetchData();
+}
+
+// ─── Pagination ───────────────────────────────────────────────────
+function goPage(pg) {
+  if (pg < 1 || pg > STATE.pages) return;
+  STATE.page = pg;
+  fetchData();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── CSV Export ───────────────────────────────────────────────────
+
+// ─── Photo hover preview ────────────────────────────────────────
+(function() {
+  const popup = document.createElement('div');
+  popup.id = 'img-preview';
+  document.body.appendChild(popup);
+
+  let activeUrl = null;
+  let moveHandler = null;
+
+  function showPopup(btn, url) {
+    if (activeUrl === url) return;
+    activeUrl = url;
+    popup.innerHTML = '<div class="img-loading">Loading…</div>';
+    popup.style.display = 'block';
+
+    const img = new Image();
+    img.onload = () => { popup.innerHTML = ''; popup.appendChild(img); };
+    img.onerror = () => { popup.innerHTML = '<div class="img-loading">Could not load image</div>'; };
+    img.src = url;
+
+    moveHandler = (e) => {
+      const pad = 14;
+      let x = e.clientX + pad;
+      let y = e.clientY + pad;
+      if (x + popup.offsetWidth + 10 > window.innerWidth)  x = e.clientX - popup.offsetWidth - pad;
+      if (y + popup.offsetHeight + 10 > window.innerHeight) y = e.clientY - popup.offsetHeight - pad;
+      popup.style.left = x + 'px';
+      popup.style.top  = y + 'px';
+    };
+    document.addEventListener('mousemove', moveHandler);
+  }
+
+  function hidePopup() {
+    activeUrl = null;
+    popup.style.display = 'none';
+    popup.innerHTML = '';
+    if (moveHandler) { document.removeEventListener('mousemove', moveHandler); moveHandler = null; }
+  }
+
+  document.getElementById('table-body').addEventListener('mouseover', (e) => {
+    const btn = e.target.closest('.photo-btn');
+    if (btn) showPopup(btn, btn.dataset.url);
+  });
+  document.getElementById('table-body').addEventListener('mouseout', (e) => {
+    if (!e.relatedTarget || !e.relatedTarget.closest('.photo-btn')) hidePopup();
+  });
+  // Click still opens the image full-size in a new tab
+  document.getElementById('table-body').addEventListener('click', (e) => {
+    const btn = e.target.closest('.photo-btn');
+    if (btn) window.open(btn.dataset.url, '_blank', 'noopener,noreferrer');
+  });
+})();
+
+document.getElementById('export-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('export-btn');
+  btn.textContent = 'Fetching…';
+  btn.disabled = true;
+  try {
+    const params = getParams(true);
+    const res  = await fetch('/api/bene-records?' + params.toString());
+    const data = await res.json();
+    const cols = [
+      'SubmissionDate','dflt_phase','zones','province','district','tehsil','duty_station',
+      'trainer_name','beneficiary_name','beneficiary_cnic','age','education','occupation',
+      'own_phone','household_income','avg_savings','living_arrangement','has_bank_account',
+      'has_mobile_money','taken_loan','loan_source','economic_activity',
+      'attendance_status','verified_retention_status'
+    ];
+    const header = cols.join(',');
+    const rows   = data.rows.map(r =>
+      cols.map(c => {
+        const v = String(r[c] ?? '').replace(/"/g,'""');
+        return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v}"` : v;
+      }).join(',')
+    );
+    const csv  = '\uFEFF' + [header, ...rows].join('\r\n'); // BOM for Excel
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href     = url;
+    link.download = `beneficiaries_${new Date().toISOString().substring(0,10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { alert('Export failed: ' + e.message); }
+  finally { btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Export CSV'; btn.disabled = false; }
+});
+
+// ─── Populate filter dropdowns ────────────────────────────────────
+async function loadFilterOpts() {
+  try {
+    const res  = await fetch('/api/bene-filter-opts');
+    filterOpts = await res.json();
+
+    const fill = (id, col, label='All') => {
+      const sel = document.getElementById(id);
+      if (!sel || !filterOpts[col]) return;
+      const existing = sel.options[0].value;
+      // preserve "All" option
+      sel.innerHTML = `<option value="all">${label}</option>`;
+      filterOpts[col].forEach(v => sel.insertAdjacentHTML('beforeend', `<option value="${v}">${v}</option>`));
+    };
+
+    fill('f-phase',    'dflt_phase',               'All Phases');
+    fill('f-province', 'province',                  'All Provinces');
+    fill('f-district', 'district',                  'All Districts');
+    fill('f-zones',    'zones',                     'All Zones');
+    fill('f-trainer',  'trainer_name',              'All Trainers');
+    fill('f-verified', 'verified_retention_status', 'All Statuses');
+    fill('f-education','education',                 'All Levels');
+    fill('f-occupation','occupation',               'All Occupations');
+    fill('f-living',   'living_arrangement',        'All');
+    fill('f-economic', 'economic_activity',         'All');
+  } catch(e) { console.error('Failed to load filter options', e); }
+}
+
+// ─── Clear all filters ────────────────────────────────────────────
+document.getElementById('clear-filters-btn').addEventListener('click', () => {
+  document.querySelectorAll('#f-phase,#f-province,#f-district,#f-zones,#f-trainer,#f-attendance,#f-verified,#f-education,#f-occupation,#f-own_phone,#f-bank,#f-mobile,#f-loan,#f-living,#f-economic').forEach(el => { el.selectedIndex = 0; });
+  document.getElementById('f-date-from').value = '';
+  document.getElementById('f-date-to').value   = '';
+  document.getElementById('f-search').value    = '';
+  STATE.page = 1;
+  fetchData();
+});
+
+// ─── Wire filter change events ────────────────────────────────────
+['f-phase','f-province','f-district','f-zones','f-trainer','f-attendance',
+ 'f-verified','f-education','f-occupation','f-own_phone','f-bank','f-mobile',
+ 'f-loan','f-living','f-economic','f-date-from','f-date-to','f-limit'].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', () => {
+    STATE.page = 1;
+    fetchData();
+  });
+});
+
+// Search debounced
+document.getElementById('f-search').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { STATE.page = 1; fetchData(); }, 400);
+});
+
+// ─── Load last updated ────────────────────────────────────────────
+async function loadLastUpdated() {
+  try {
+    const r = await fetch('/api/last-updated');
+    const d = await r.json();
+    if (d.last_updated) {
+      document.getElementById('last-updated-lbl').textContent = d.last_updated.substring(0,10);
+    }
+  } catch(e) {}
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+async function init() {
+  if (!sessionStorage.getItem('isVerified')) {
+    window.location.href = '/login.html';
+    return;
+  }
+  await Promise.all([loadFilterOpts(), loadLastUpdated()]);
+  fetchData();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+  <script src="assets/js/shared-sidebar.js"></script>
+</body>
+</html>

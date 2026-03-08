@@ -1,0 +1,618 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFLT · Audit Intelligence</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: { 50: '#f0f9ff', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' },
+                        dark:  { 800: '#1e293b', 900: '#0f172a' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #F8FAFC; color: #334155; }
+        
+        /* Sidebar Styles */
+        #left-sidebar {
+            position: fixed; inset: 0 auto 0 0; width: 76px;
+            background: white; border-right: 1px solid #e5e7eb;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.04);
+            transition: width 0.35s ease; overflow: hidden; z-index: 50;
+        }
+        #left-sidebar .sidebar-content { opacity: 0; transition: opacity 0.25s ease 0.08s; }
+        #left-sidebar:hover { width: 280px; }
+        #left-sidebar:hover .sidebar-content { opacity: 1; }
+        @media (max-width: 1023px) {
+            #left-sidebar { transform: translateX(-100%); width: 280px !important; }
+            #left-sidebar.mobile-open { transform: translateX(0); }
+        }
+        
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .pulse-badge { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<aside id="left-sidebar">
+    <div class="sidebar-content p-5 h-full flex flex-col">
+        <div class="border-b pb-4 mb-6 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-blue-600">Decks</h2>
+        </div>
+        <nav class="flex-1">
+            <ul class="space-y-1.5">
+                    <li data-deck="index.html">
+                        <a href="../decks/index.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            <span class="ml-3">DFLT Status Deck</span>
+                        </a>
+                    </li>
+
+                    <li data-deck="Benefeciary_status_deck.html">
+                        <a href="../decks/Benefeciary_status_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 bg-indigo-100 text-indigo-700 font-semibold">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <span class="ml-3">Beneficiary Status</span>
+                        </a>
+                    </li>
+
+                    <li data-deck="DFLT_2_Soft_launch_Map.html">
+                        <a href="../decks/DFLT_2_Soft_launch_Map.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                            <span class="ml-3">DFLT Mapping</span>
+                        </a>
+                    </li>
+
+                    <li data-deck="Trainings_Locations_Viewers.html">
+                        <a href="../decks/Trainings_Locations_Viewers.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">DFLT Session</span>
+                        </a>
+                    </li>
+
+                    <li data-deck="trainers_deck.html">
+                        <a href="../decks/trainers_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            <span class="ml-3">Trainers Progress</span>
+                        </a>
+                    </li>
+
+                    <li data-deck="ic_data_deck.html">
+                        <a href="../decks/ic_data_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                            <span class="ml-3">IC Monitoring Deck</span>
+                        </a>
+                    </li>
+
+                    <li data-deck="GRM Table.html">
+                        <a href="../decks/GRM Table.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">GRM Analytics Table</span>
+                        </a>
+                    </li>
+
+                    <li data-deck="duration_deck.html">
+                        <a href="../decks/duration_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="ml-3">Duration Analysis</span></a>
+                    </li>
+
+                    <li data-deck="trainer_report.html">
+                        <a href="../decks/trainer_report.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="ml-3">Trainer Report Deck</span></a>
+                    </li>
+
+                    <li data-deck="DFLT-Target Deck.html">
+                        <a href="../decks/DFLT-Target Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                            <span class="ml-3">Target Achievement</span></a>
+                    </li>
+
+                    <li data-deck="DFLT_Visuals_Deck.html">
+                        <a href="../decks/DFLT_Visuals_Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                            <span class="ml-3">DFLT Visuals Deck</span></a>
+                    </li>
+
+                    <li data-deck="DFLT Pre-Post.html">
+                        <a href="../decks/DFLT Pre-Post.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            <span class="ml-3">DFLT Pre Post</span>
+                        </a>
+                    </li>
+                </ul>
+        </nav>
+    </div>
+</aside>
+
+<main class="lg:ml-[76px] transition-all duration-300 p-6 md:p-10">
+    <header class="max-w-7xl mx-auto mb-10">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="bg-blue-600 text-white p-3 rounded-xl shadow-lg">
+                    <i class="fas fa-shield-halved text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-bold tracking-widest text-blue-600 uppercase mb-0.5">Quality Assurance</div>
+                    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Pre/Post Audit Dashboard</h1>
+                </div>
+            </div>
+            
+            <div id="loading-indicator" class="flex items-center gap-3 px-4 py-2 bg-white border border-slate-200 rounded-full shadow-sm text-sm font-bold text-slate-600">
+                <div class="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                Initializing Database...
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto mb-8">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            <div class="md:col-span-3">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Provincial Coordinator</label>
+                <select id="filterPC" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                    <option value="all">All Coordinators</option>
+                </select>
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Zone / Region</label>
+                <select id="filterZone" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                    <option value="all">All Zones</option>
+                </select>
+            </div>
+            <div class="md:col-span-4">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Trainer Name</label>
+                <select id="filterTrainer" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                    <option value="">-- View Leaderboard --</option>
+                </select>
+            </div>
+            <div class="md:col-span-2 flex justify-end">
+                <button onclick="resetFilters()" class="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-blue-600 uppercase flex items-center gap-2">
+                    <i class="fas fa-undo-alt"></i> Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-content" class="max-w-7xl mx-auto">
+        <div id="state-loading" class="flex flex-col items-center justify-center py-20 text-center">
+            <div class="bg-white p-10 rounded-3xl border border-slate-100 shadow-sm max-w-md">
+                <div class="text-blue-500 mb-4 text-4xl"><i class="fas fa-circle-notch animate-spin"></i></div>
+                <h3 class="text-lg font-bold text-slate-800">Syncing with bisp_dflt2.db</h3>
+                <p class="text-slate-500 text-sm mt-2">Preparing your audit data for February 2026...</p>
+            </div>
+        </div>
+
+        <div id="state-leaderboard" class="hidden fade-in">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+                <h3 class="text-sm font-bold text-slate-700 uppercase mb-6 tracking-wide">Regional Error Trends</h3>
+                <div class="h-64 w-full"><canvas id="trendChart"></canvas></div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+                        <tr>
+                            <th class="px-6 py-4">Trainer Name</th>
+                            <th class="px-6 py-4">Coordinator / Zone</th>
+                            <th class="px-6 py-4 text-center">Total Bene</th>
+                            <th class="px-6 py-4 text-center">Errors</th>
+                            <th class="px-6 py-4 text-right">Error Rate</th>
+                            <th class="px-6 py-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body" class="divide-y divide-slate-100 text-sm font-medium text-slate-700"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="state-dashboard" class="hidden fade-in">
+            <div class="flex items-end justify-between mb-8">
+                <div>
+                    <h2 id="dash-name" class="text-3xl font-extrabold text-slate-900">--</h2>
+                    <p id="dash-meta" class="text-sm text-slate-500 font-medium mt-1">--</p>
+                </div>
+                <div id="dash-badge" class="px-4 py-2 rounded-xl text-sm font-bold shadow-sm">--% Error Rate</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Verified (Clean)</p>
+                    <h3 id="kpi-verified" class="text-4xl font-bold text-slate-800">0</h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Total Errors</p>
+                    <h3 id="kpi-errors" class="text-4xl font-bold text-red-500">0</h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Total Attempted</p>
+                    <h3 id="kpi-total" class="text-4xl font-bold text-blue-600">0</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
+                    <div class="h-80 w-full"><canvas id="mainChart"></canvas></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[420px]">
+                    <h3 class="text-sm font-bold text-slate-700 uppercase mb-4">Daily Logs</h3>
+                    <div id="day-list" class="flex-grow overflow-y-auto space-y-3 pr-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div id="errorModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+        <div class="bg-red-50 px-6 py-4 flex justify-between items-center border-b border-red-100">
+            <h3 class="text-lg font-bold text-red-800">Error Details</h3>
+            <button onclick="closeModal()" class="text-red-300 hover:text-red-600 text-2xl">&times;</button>
+        </div>
+        <div class="p-6">
+            <div id="modal-trainer" class="font-bold"></div>
+            <div id="modal-date" class="text-sm text-slate-500 mb-4"></div>
+            <div class="max-h-64 overflow-y-auto border rounded-xl">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 sticky top-0 font-bold text-slate-500">
+                        <tr><th class="px-4 py-3">CNIC</th><th class="px-4 py-3">Issue</th></tr>
+                    </thead>
+                    <tbody id="modal-body" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    
+        let masterData = [];
+        let chartInstance = null;
+        let trendChartInstance = null;
+        const TARGET_MONTH = '2026-02';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!sessionStorage.getItem('isVerified')) {
+                window.location.href = '/login.html';
+                return;
+            }
+            loadData();
+        });
+
+        async function loadData() {
+            try {
+                const [res1, res2] = await Promise.all([
+                    fetch('/api/prepost-day1'),
+                    fetch('/api/prepost-day2')
+                ]);
+                if (!res1.ok || !res2.ok) throw new Error('Failed to load pre/post data');
+                const [day1, day2] = await Promise.all([res1.json(), res2.json()]);
+
+                document.getElementById('loading-indicator').classList.add('hidden');
+                processData([...day1, ...day2]);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('state-loading').innerHTML = `
+                    <div class="bg-red-50 text-red-700 p-6 rounded-2xl border border-red-100">
+                        <i class="fas fa-exclamation-triangle mb-2 text-2xl"></i>
+                        <p class="font-bold">Initialization Failed</p>
+                        <p class="text-sm">${err.message}</p>
+                    </div>`;
+            }
+        }
+        function processData(raw) {
+            try {
+                masterData = raw.map(row => {
+                    const st = (row.starttime || '').split(/[T\s]/)[0];
+                    const sd = (row.SubmissionDate || '').split(/[T\s]/)[0];
+                    const dateStr = st || sd;
+                    const tName = (row.trainer_name || 'Unknown').trim().replace(/_/g, ' ');
+                    return {
+                        cnic: String(row.beneficiary_cnic || '').trim().replace(/[-\s]/g, '').replace(/\.0$/, ''),
+                        trainer: toTitleCase(tName),
+                        type: (row.prepost_type || '').toLowerCase().trim(),
+                        date: dateStr,
+                        pc: (row.provincial_coordinator || 'Unknown').trim(),
+                        zone: (row.zones || 'Unknown').trim()
+                    };
+                }).filter(d => d.date.startsWith(TARGET_MONTH) && d.cnic && d.cnic !== 'nan' && d.cnic !== 'None');
+
+                initFilters();
+                renderView();
+            } catch (err) { alert("Data Error: " + err.message); }
+        }
+
+        function initFilters() {
+        const getOpts = (key) => [...new Set(masterData.map(d => d[key]))].sort();
+        const pcSelect = document.getElementById('filterPC');
+        const zoneSelect = document.getElementById('filterZone');
+        const trainerSelect = document.getElementById('filterTrainer');
+
+        const populate = (sel, opts) => {
+            sel.innerHTML = `<option value="all">All</option>` + opts.map(o => `<option value="${o}">${o}</option>`).join('');
+            sel.disabled = false;
+        };
+
+        populate(pcSelect, getOpts('pc'));
+        
+        pcSelect.addEventListener('change', () => {
+            const pc = pcSelect.value;
+            let filtered = masterData;
+            if (pc !== 'all') filtered = filtered.filter(d => d.pc === pc);
+            populate(zoneSelect, [...new Set(filtered.map(d => d.zone))].sort());
+            updateTrainers();
+        });
+
+        const updateTrainers = () => {
+            const pc = pcSelect.value;
+            const zone = zoneSelect.value;
+            let filtered = masterData;
+            if (pc !== 'all') filtered = filtered.filter(d => d.pc === pc);
+            if (zone !== 'all') filtered = filtered.filter(d => d.zone === zone);
+            
+            const trainers = [...new Set(filtered.map(d => d.trainer))].sort();
+            trainerSelect.innerHTML = `<option value="">-- View Leaderboard --</option>` + trainers.map(t => `<option value="${t}">${t}</option>`).join('');
+            trainerSelect.disabled = false;
+            renderView();
+        };
+
+        zoneSelect.addEventListener('change', updateTrainers);
+        trainerSelect.addEventListener('change', renderView);
+    }
+
+        function renderView() {
+                const trainer = document.getElementById('filterTrainer').value;
+                document.getElementById('state-loading').classList.add('hidden');
+                
+                if (masterData.length === 0) {
+                    document.getElementById('state-loading').innerHTML = `<p class="p-10 text-slate-500">No valid dates found with at least 10 trainers.</p>`;
+                    document.getElementById('state-loading').classList.remove('hidden');
+                    return;
+                }
+
+                if (!trainer) {
+                    document.getElementById('state-dashboard').classList.add('hidden');
+                    renderLeaderboard();
+                    document.getElementById('state-leaderboard').classList.remove('hidden');
+                } else {
+                    document.getElementById('state-leaderboard').classList.add('hidden');
+                    renderDashboard(trainer);
+                    document.getElementById('state-dashboard').classList.remove('hidden');
+                }
+            }
+
+        function renderLeaderboard() {
+            const pc = document.getElementById('filterPC').value;
+            const zone = document.getElementById('filterZone').value;
+
+            let scope = masterData;
+            if (pc !== 'all') scope = scope.filter(d => d.pc === pc);
+            if (zone !== 'all') scope = scope.filter(d => d.zone === zone);
+
+            // 1. RENDER TREND CHART (New Feature)
+            renderTrendChart(scope);
+
+            // 2. RENDER TABLE
+            // Identify Last 4 Active Days for "Recent Risk" calculation
+            const allDates = [...new Set(scope.map(d => d.date))].sort();
+            const last4Days = allDates.slice(-4);
+
+            const stats = {};
+            scope.forEach(d => {
+                if (!stats[d.trainer]) stats[d.trainer] = { name: d.trainer, pc: d.pc, zone: d.zone, total: 0, err: 0, days: new Set(), recentErr: 0, recentTotal: 0 };
+                stats[d.trainer].days.add(d.date);
+            });
+
+            Object.values(stats).forEach(t => {
+                const tData = scope.filter(d => d.trainer === t.name);
+                [...t.days].forEach(day => {
+                    const dayRows = tData.filter(d => d.date === day);
+                    const pre = new Set(dayRows.filter(r => r.type === 'pre_survey').map(r => r.cnic));
+                    const post = new Set(dayRows.filter(r => r.type === 'post_survey').map(r => r.cnic));
+                    
+                    const clean = [...pre].filter(x => post.has(x)).length;
+                    const errs = ([...pre].filter(x => !post.has(x)).length) + ([...post].filter(x => !pre.has(x)).length);
+                    const dayTot = clean + errs;
+
+                    t.total += dayTot;
+                    t.err += errs;
+
+                    // Recent Calculation
+                    if (last4Days.includes(day)) {
+                        t.recentTotal += dayTot;
+                        t.recentErr += errs;
+                    }
+                });
+                t.rate = t.total ? (t.err / t.total * 100) : 0;
+                t.recentRate = t.recentTotal ? (t.recentErr / t.recentTotal * 100) : 0;
+            });
+
+            const worst = Object.values(stats)
+                .filter(t => t.total > 0)
+                .sort((a, b) => b.rate - a.rate)
+                .slice(0, 10);
+
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = worst.map(t => {
+                // New Feature: Warning Badge
+                const isHighRisk = t.recentTotal > 0 && t.recentRate > 50;
+                
+                return `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-50">
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-slate-700">${t.name}</div>
+                        ${isHighRisk ? `<div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 pulse-badge"><i class="fas fa-radiation"></i> CRITICAL RISK</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 text-xs">${t.pc}<br><span class="text-slate-400">${t.zone}</span></td>
+                    <td class="px-6 py-4 text-center font-mono text-slate-600">${t.total}</td>
+                    <td class="px-6 py-4 text-center font-mono text-red-500 font-bold">${t.err}</td>
+                    <td class="px-6 py-4 text-right">
+                        <span class="bg-red-50 text-red-600 px-2 py-1 rounded text-xs font-bold">${t.rate.toFixed(1)}%</span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="document.getElementById('filterTrainer').value='${t.name}'; renderView();" class="text-blue-500 hover:text-blue-700 font-bold text-xs uppercase underline">View</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function renderTrendChart(scope) {
+            // Group by Date + PC
+            const trendData = {}; // { PC_Name: { date: {err:0, tot:0} } }
+            const allDates = [...new Set(scope.map(d => d.date))].sort();
+            
+            scope.forEach(d => {
+                if (!trendData[d.pc]) trendData[d.pc] = {};
+                if (!trendData[d.pc][d.date]) trendData[d.pc][d.date] = { pre: new Set(), post: new Set() };
+                
+                if (d.type === 'pre_survey') trendData[d.pc][d.date].pre.add(d.cnic);
+                if (d.type === 'post_survey') trendData[d.pc][d.date].post.add(d.cnic);
+            });
+
+            // Prepare Datasets
+            const datasets = Object.keys(trendData).map((pc, index) => {
+                const rates = allDates.map(date => {
+                    if (!trendData[pc][date]) return null;
+                    const pre = trendData[pc][date].pre;
+                    const post = trendData[pc][date].post;
+                    const errs = ([...pre].filter(x=>!post.has(x)).length) + ([...post].filter(x=>!pre.has(x)).length);
+                    const clean = [...pre].filter(x=>post.has(x)).length;
+                    const total = clean + errs;
+                    return total ? (errs/total*100) : null;
+                });
+
+                const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                return {
+                    label: pc,
+                    data: rates,
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: 'transparent',
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3
+                };
+            });
+
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (trendChartInstance) trendChartInstance.destroy();
+
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: allDates, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' }, tooltip: { mode: 'index', intersect: false } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Error Rate %' } } }
+                }
+            });
+        }
+
+        function renderDashboard(trainerName) {
+            const tData = masterData.filter(d => d.trainer === trainerName);
+            document.getElementById('dash-name').innerText = trainerName;
+            document.getElementById('dash-meta').innerText = `${tData[0].pc} • ${tData[0].zone}`;
+
+            const days = [...new Set(tData.map(d => d.date))].sort();
+            let total = 0, verified = 0, errors = 0;
+            const chartData = [];
+            const listContainer = document.getElementById('day-list');
+            listContainer.innerHTML = '';
+
+            days.forEach(day => {
+                const dayRows = tData.filter(d => d.date === day);
+                const pre = new Set(dayRows.filter(r => r.type === 'pre_survey').map(r => r.cnic));
+                const post = new Set(dayRows.filter(r => r.type === 'post_survey').map(r => r.cnic));
+                const drops = [...pre].filter(x => !post.has(x));
+                const ghosts = [...post].filter(x => !pre.has(x));
+                const clean = [...pre].filter(x => post.has(x)).length;
+                
+                const dayErr = drops.length + ghosts.length;
+                const dayTotal = clean + dayErr;
+                
+                total += dayTotal; verified += clean; errors += dayErr;
+                chartData.push({ date: day, clean: clean, err: dayErr });
+
+                const isErr = dayErr > 0;
+                const div = document.createElement('div');
+                div.className = `p-4 rounded-xl border flex justify-between items-center transition cursor-pointer hover:shadow-md ${isErr ? 'bg-red-50/50 border-red-100' : 'bg-white border-slate-100'}`;
+                div.innerHTML = `
+                    <div><div class="font-bold text-slate-700 text-sm">${day}</div><div class="text-[10px] text-slate-400 font-bold uppercase">Total: ${dayTotal}</div></div>
+                    ${isErr ? `<div class="bg-white border border-red-100 text-red-500 px-3 py-1 rounded-lg text-xs font-bold shadow-sm">${dayErr} Errors</div>` : `<div class="text-green-500 text-lg"><i class="fas fa-check-circle"></i></div>`}
+                `;
+                if(isErr) div.onclick = () => openModal(trainerName, day, drops, ghosts);
+                listContainer.appendChild(div);
+            });
+
+            animateValue("kpi-total", total); animateValue("kpi-verified", verified); animateValue("kpi-errors", errors);
+            const rate = total ? ((errors/total)*100).toFixed(1) : 0;
+            const badge = document.getElementById('dash-badge');
+            badge.innerText = `${rate}% Error Rate`;
+            badge.className = `px-4 py-2 rounded-xl text-sm font-bold shadow-sm ${rate > 20 ? 'bg-red-500 text-white shadow-red-200' : 'bg-green-100 text-green-700'}`;
+            
+            renderChart(chartData);
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{ label: 'Verified', data: data.map(d => d.clean), backgroundColor: '#22c55e', borderRadius: 6 }, { label: 'Errors', data: data.map(d => d.err), backgroundColor: '#ef4444', borderRadius: 6 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function openModal(trainer, date, drops, ghosts) {
+            document.getElementById('modal-trainer').innerText = trainer;
+            document.getElementById('modal-date').innerText = date;
+            const tbody = document.getElementById('modal-body');
+            tbody.innerHTML = '';
+            const addRow = (c, t, cl) => { tbody.innerHTML += `<tr class="hover:bg-slate-50 transition"><td class="px-4 py-3 font-mono text-slate-600">${c}</td><td class="px-4 py-3 font-bold ${cl}">${t}</td></tr>`; };
+            drops.forEach(c => addRow(c, 'Dropout (Missing Post)', 'text-orange-500'));
+            ghosts.forEach(c => addRow(c, 'Ghost (Missing Pre)', 'text-red-600'));
+            document.getElementById('errorModal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('errorModal').classList.add('hidden'); }
+        function toTitleCase(str) { 
+        return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()); 
+    }
+        function animateValue(id, end) { document.getElementById(id).innerText = end; }
+        function resetFilters() {
+            document.getElementById('filterPC').value = 'all';
+            document.getElementById('filterPC').dispatchEvent(new Event('change'));
+        }
+        
+    </script>
+  <script src="assets/js/shared-sidebar.js"></script>
+</body>
+</html>

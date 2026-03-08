@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFLT Phase 2 | GRM Deck v2</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --brand-color: #4f46e5;
+            
+            --col-resolved: #10b981;
+            --col-progress: #f59e0b;
+            --col-overdue: #ef4444;
+            --col-open: #3b82f6;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-color);
+            background-image: linear-gradient(175deg, var(--bg-color) 0%, #dbe7f2 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* --- SIDEBAR & LAYOUT --- */
+        #sidebar { transition: transform 0.3s ease-in-out; transform: translateX(-100%); }
+        #sidebar-overlay { transition: opacity 0.3s ease-in-out; }
+        #page-container { transition: margin-left 0.3s ease-in-out; }
+        body.sidebar-open #sidebar { transform: translateX(0); }
+        body.sidebar-open #sidebar-overlay { display: block; }
+        @media (min-width: 1024px) { body.sidebar-open #page-container { margin-left: 16rem; } }
+
+        /* --- GRID SYSTEM --- */
+        .grm-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: auto repeat(10, minmax(0, 1fr));
+            gap: 1.5rem;
+            padding: 1.5rem;
+            box-sizing: border-box;
+            height: 100vh; /* Full viewport height */
+        }
+
+        /* --- GLASS CARDS --- */
+        .card {
+            background-color: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .card:hover { box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08); transform: translateY(-4px); }
+        
+        /* --- PLACEMENT --- */
+        .header { grid-column: 1 / -1; grid-row: 1; min-height: 80px; }
+        .kpi-total, .kpi-open, .kpi-resolved, .kpi-overdue, .kpi-avg-time, .kpi-urgent { grid-column: span 2; grid-row: 2; }
+        
+        .performance-chart-card { grid-column: 1 / 8; grid-row: 3 / 7; }
+        .category-chart-card { grid-column: 8 / 13; grid-row: 3 / 7; }
+        
+        .live-feed-card { grid-column: 1 / 6; grid-row: 7 / 12; overflow: hidden; }
+        .channel-chart-card { grid-column: 6 / 10; grid-row: 7 / 10; }
+        .status-chart-card { grid-column: 10 / 13; grid-row: 7 / 10; }
+        .overdue-table-card { grid-column: 6 / 13; grid-row: 10 / 12; overflow: hidden; }
+
+        /* --- COMPONENTS --- */
+        .chart-container, .table-container { flex-grow: 1; position: relative; min-height: 0; }
+        .table-container { overflow-y: auto; }
+        
+        /* Custom Scrollbar */
+        .table-container::-webkit-scrollbar { width: 6px; }
+        .table-container::-webkit-scrollbar-track { background: transparent; }
+        .table-container::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+        /* Status Dots */
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+        /* Live Pulse */
+        .pulse-ring {
+            position: relative; width: 10px; height: 10px; background: #ef4444; border-radius: 50%;
+        }
+        .pulse-ring::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%; border: 2px solid #ef4444;
+            animation: pulse-animation 2s infinite;
+        }
+        @keyframes pulse-animation { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
+
+        /* Notification Popup */
+        #notification-popup {
+            position: fixed; bottom: 2rem; right: 2rem;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            border-left: 4px solid var(--brand-color);
+            padding: 1rem 1.5rem; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            display: flex; align-items: center; gap: 12px;
+            transform: translateX(150%); transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 100;
+        }
+        #notification-popup.show { transform: translateX(0); }
+
+        @media (max-width: 1280px) {
+            .grm-grid { display: flex; flex-direction: column; height: auto; }
+            .card:hover { transform: none; }
+        }
+    </style>
+</head>
+<body class="sidebar-open">
+    
+    <aside id="sidebar" class="fixed top-0 left-0 z-[60] w-64 h-full bg-white shadow-2xl flex flex-col">
+        <div class="p-6 border-b border-gray-100">
+            <h2 class="text-xl font-black text-indigo-700 tracking-tight">DFLT <span class="text-gray-400">v2.0</span></h2>
+        </div>
+        <nav class="p-4 space-y-2 flex-grow">
+            <a href="../index.html" class="flex items-center p-3 text-gray-600 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-colors">
+                <i class="fas fa-columns w-5 mr-3 text-center"></i> Status Deck
+            </a>
+            <a href="../decks/GRM Table.html" class="flex items-center p-3 text-indigo-700 bg-indigo-50 rounded-xl font-bold shadow-sm ring-1 ring-indigo-100">
+                <i class="fas fa-chart-bar w-5 mr-3 text-center"></i> Analytics Deck
+            </a>
+            
+        </nav>
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white flex items-center justify-center font-bold text-xs shadow-md">AD</div>
+                <div>
+                    <p class="text-sm font-bold text-gray-800">Admin</p>
+                    <p class="text-xs text-green-500 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Online</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-30 z-50 hidden"></div>
+
+    <div id="page-container">
+        <div class="grm-grid" id="dashboard-content">
+            
+            <header class="card header flex flex-col xl:flex-row items-center justify-between gap-4 p-4">
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <button id="sidebar-toggle" class="p-2 rounded-lg text-gray-500 hover:bg-indigo-50 transition-colors">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-xl font-black text-slate-800 tracking-tight">Analytics Command Center</h1>
+                        <p class="text-xs text-gray-500 font-semibold">Sindh Region Grievance Data</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold border border-red-100">
+                        <div class="pulse-ring"></div> LIVE FEED
+                    </div>
+                    <div class="text-right hidden xl:block pl-6 border-l border-gray-200">
+                        <p id="clock-time" class="font-bold text-gray-800 text-lg leading-none">--:--</p>
+                        <p id="clock-date" class="text-xs text-gray-500 font-bold uppercase tracking-wider">Loading</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="card kpi-total justify-center">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Total Grievances</h3>
+                <p id="kpiTotal" class="text-4xl font-black text-indigo-600">0</p>
+            </div>
+            <div class="card kpi-open justify-center">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Open Cases</h3>
+                <p id="kpiOpen" class="text-4xl font-black text-blue-500">0</p>
+            </div>
+            <div class="card kpi-resolved justify-center">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Resolved</h3>
+                <p id="kpiResolved" class="text-4xl font-black text-emerald-500">0</p>
+            </div>
+            <div class="card kpi-overdue justify-center">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Overdue</h3>
+                <p id="kpiOverdue" class="text-4xl font-black text-red-500">0</p>
+            </div>
+            <div class="card kpi-avg-time justify-center">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Avg. Resolution</h3>
+                <p id="kpiAvgTime" class="text-4xl font-black text-gray-700">0<span class="text-2xl text-gray-400">d</span></p>
+            </div>
+            <div class="card kpi-urgent justify-center bg-red-50 border-red-100">
+                <h3 class="text-xs font-bold text-red-400 uppercase tracking-wide mb-1">Urgent Action</h3>
+                <p id="kpiUrgent" class="text-4xl font-black text-red-600">0</p>
+            </div>
+
+            <div class="card performance-chart-card">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase">30-Day Activity Trend</h3>
+                    <div class="flex gap-2 text-xs font-semibold text-gray-400">
+                        <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-indigo-500 mr-1"></span> New</span>
+                        <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-400 mr-1"></span> Closed</span>
+                    </div>
+                </div>
+                <div class="chart-container"><canvas id="performanceChart"></canvas></div>
+            </div>
+            
+            <div class="card category-chart-card">
+                <h3 class="text-sm font-bold text-gray-700 uppercase mb-4">Top Categories</h3>
+                <div class="chart-container"><canvas id="categoryChart"></canvas></div>
+            </div>
+
+            <div class="card live-feed-card">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase flex items-center gap-2">
+                        <i class="fas fa-bolt text-amber-500"></i> Incoming Feed
+                    </h3>
+                    <span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded font-bold">Sindh Only</span>
+                </div>
+                <div id="liveFeedContainer" class="table-container space-y-3 pr-2"></div>
+            </div>
+            
+            <div class="card channel-chart-card">
+                <h3 class="text-sm font-bold text-gray-700 uppercase mb-2">By Channel</h3>
+                <div class="chart-container"><canvas id="channelChart"></canvas></div>
+            </div>
+            
+            <div class="card status-chart-card">
+                <h3 class="text-sm font-bold text-gray-700 uppercase mb-2">Status Split</h3>
+                <div class="chart-container"><canvas id="statusChart"></canvas></div>
+            </div>
+            
+            <div class="card overdue-table-card">
+                <h3 class="text-sm font-bold text-red-600 uppercase mb-3 flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle"></i> Critical Overdue (>7 Days)
+                </h3>
+                <div class="table-container">
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-3 py-3 font-bold">ID</th>
+                                <th class="px-3 py-3 font-bold">District (Sindh)</th>
+                                <th class="px-3 py-3 font-bold">Category</th>
+                                <th class="px-3 py-3 font-bold">Age</th>
+                                <th class="px-3 py-3 font-bold">Assignee</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overdueGrievancesTable" class="text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification-popup">
+        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <i class="fas fa-bell"></i>
+        </div>
+        <div>
+            <h4 class="font-bold text-sm text-slate-800">New Grievance</h4>
+            <p id="notif-content" class="text-xs text-gray-500">Just now</p>
+        </div>
+    </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- UI INTERACTION ---
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const overlay = document.getElementById('sidebar-overlay');
+        const toggleMenu = () => document.body.classList.toggle('sidebar-open');
+        sidebarToggle.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(); });
+        overlay.addEventListener('click', toggleMenu);
+
+        // --- CLOCK ---
+        const updateTime = () => {
+            const now = new Date();
+            document.getElementById('clock-time').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        };
+        updateTime(); setInterval(updateTime, 1000);
+
+        // --- CHART SETTINGS ---
+        Chart.defaults.font.family = "'Montserrat', sans-serif";
+        Chart.defaults.font.size = 11;
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.scale.grid.color = '#f1f5f9';
+
+        // --- 1. DATA: THE 14 ROWS ONLY (Enriched with Sindh Districts) ---
+        const sindhDistricts = ['Karachi', 'Hyderabad', 'Sukkur', 'Larkana', 'Mirpurkhas', 'Benazirabad', 'Badin', 'Dadu', 'Ghotki', 'Jacobabad', 'Jamshoro', 'Kashmore', 'Khairpur', 'Matiari', 'Naushahro Feroze', 'Sanghar', 'Shikarpur', 'Sujawal', 'Tando Allahyar', 'Thatta', 'Umerkot'];
+        
+        const getRandomSindhDistrict = () => sindhDistricts[Math.floor(Math.random() * sindhDistricts.length)];
+        const formatCat = (cat) => cat.replace('_', ' ').replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase());
+
+        // The specific data from your sheet
+        const rawData = [
+            { id: 'GRM-9005', trainer: 'Kanwal Mustafa', loc: 'Shahnawaz', cat: 'misconduct', sub: 'negligence', age: 8, status: 'Escalated', desc: 'Venue not suitable, trainer repeated same venue' },
+            { id: 'GRM-9001', trainer: 'Aliza', loc: 'Hyder Shah', cat: 'service_delivery', sub: 'scheduling', age: 10, status: 'Open', desc: '4 hours training issue community not agree' },
+            { id: 'GRM-9002', trainer: 'Mushique_Zohra', loc: 'Hyder Shah', cat: 'logistics', sub: 'venue', age: 9, status: 'Resolved', desc: 'Benefies are demanding food items' },
+            { id: 'GRM-9003', trainer: 'Nida_Mohsin', loc: 'Sajawal', cat: 'logistics', sub: 'venue', age: 9, status: 'Open', desc: 'Location sharing issues' },
+            { id: 'GRM-9004', trainer: 'Kanwal_Mustafa', loc: 'Shahnawaz', cat: 'logistics', sub: 'venue', age: 8, status: 'In Progress', desc: 'Venue was not suitable for beneficiaries' },
+            { id: 'GRM-9007', trainer: 'Amber', loc: 'Shahnawaz', cat: 'service_delivery', sub: 'training_quality', age: 7, status: 'Open', desc: 'Venue near animals/smelly' },
+            { id: 'GRM-9008', trainer: 'Gulnaz_Mashori', loc: 'Shahnawaz', cat: 'service_delivery', sub: 'training_quality', age: 6, status: 'Open', desc: 'Smelly venue, difficult to sit' },
+            { id: 'GRM-9009', trainer: 'Iram', loc: 'Muzafar Ali', cat: 'misconduct', sub: 'fraud', age: 5, status: 'In Progress', desc: 'Do you lack of knowledge.' },
+            { id: 'GRM-9014', trainer: 'Zara_Amjad', loc: 'Waqar', cat: 'service_delivery', sub: 'scheduling', age: 2, status: 'Open', desc: 'Trainer not available at start time' },
+            { id: 'GRM-9006', trainer: 'Roshan_Bano', loc: 'Mehran', cat: 'service_delivery', sub: 'disrespectful', age: 7, status: 'Resolved', desc: 'Yhh' },
+            { id: 'GRM-9010', trainer: 'Shaista_Jatoi', loc: 'Shahnawaz', cat: 'service_delivery', sub: 'training_quality', age: 4, status: 'Resolved', desc: 'The trainer is new n confused' },
+            { id: 'GRM-9011', trainer: 'Nazia_Sujawal', loc: 'Zohaib', cat: 'service_delivery', sub: 'training_quality', age: 3, status: 'In Progress', desc: 'Trainer has less information' },
+            { id: 'GRM-9012', trainer: 'Nasreen_Shah', loc: 'Hyder Shah', cat: 'service_delivery', sub: 'scheduling', age: 2, status: 'Open', desc: 'The training started late' },
+            { id: 'GRM-9013', trainer: 'Kanwal', loc: 'Sajawal', cat: 'logistics', sub: 'venue', age: 1, status: 'Open', desc: 'Lot of noise from children' }
+        ];
+
+        // Process logic
+        let grievances = rawData.map(row => {
+            const date = new Date(); date.setDate(date.getDate() - row.age);
+            return {
+                id: row.id,
+                district: getRandomSindhDistrict(), // Random Sindh District assigned
+                category: formatCat(row.cat),
+                status: row.status,
+                priority: (row.cat === 'misconduct') ? 'Urgent' : 'Routine',
+                date: date,
+                assignee: row.trainer.replace('_', ' '),
+                comment: row.desc,
+                channel: ['App', 'Call Center', 'In-Person'][Math.floor(Math.random() * 3)]
+            };
+        });
+
+        // --- DASHBOARD UPDATES ---
+        const updateKPIs = () => {
+            document.getElementById('kpiTotal').textContent = grievances.length;
+            document.getElementById('kpiOpen').textContent = grievances.filter(g => g.status === 'Open').length;
+            document.getElementById('kpiResolved').textContent = grievances.filter(g => g.status === 'Resolved').length;
+            document.getElementById('kpiOverdue').textContent = grievances.filter(g => g.status !== 'Resolved' && (new Date() - g.date)/(1000*3600*24) > 7).length;
+            document.getElementById('kpiUrgent').textContent = grievances.filter(g => g.priority === 'Urgent').length;
+            
+            // Avg Time Logic (Mocked for visual based on age)
+            const ages = grievances.map(g => (new Date() - g.date)/(1000*3600*24));
+            const avg = ages.reduce((a,b) => a+b, 0) / ages.length;
+            document.getElementById('kpiAvgTime').innerHTML = `${Math.round(avg)}<span class="text-2xl text-gray-400">d</span>`;
+        };
+
+        const renderCharts = () => {
+            // 1. Performance (Trend of the 14 rows)
+            const days = [...Array(14)].map((_, i) => { 
+                const d = new Date(); d.setDate(d.getDate() - (13-i)); 
+                return d.toLocaleDateString([],{day:'numeric', month:'short'});
+            });
+            const trendData = days.map(dayStr => grievances.filter(g => g.date.toLocaleDateString([],{day:'numeric', month:'short'}) === dayStr).length);
+            
+            new Chart(document.getElementById('performanceChart'), {
+                type: 'line',
+                data: { labels: days, datasets: [{ label: 'New', data: trendData, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+
+            // 2. Categories
+            const catCounts = {}; grievances.forEach(g => catCounts[g.category] = (catCounts[g.category] || 0) + 1);
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'bar',
+                data: { labels: Object.keys(catCounts), datasets: [{ data: Object.values(catCounts), backgroundColor: '#6366f1', borderRadius: 6 }] },
+                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { display: false, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }
+            });
+
+            // 3. Status & Channel
+            const statCounts = {}; grievances.forEach(g => statCounts[g.status] = (statCounts[g.status] || 0) + 1);
+            new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut', data: { labels: Object.keys(statCounts), datasets: [{ data: Object.values(statCounts), backgroundColor: ['#3b82f6', '#10b981', '#ef4444', '#f59e0b'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
+            });
+
+            const chanCounts = {}; grievances.forEach(g => chanCounts[g.channel] = (chanCounts[g.channel] || 0) + 1);
+            new Chart(document.getElementById('channelChart'), {
+                type: 'pie', data: { labels: Object.keys(chanCounts), datasets: [{ data: Object.values(chanCounts), backgroundColor: ['#3b82f6', '#f59e0b', '#10b981'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        };
+
+        const renderFeed = () => {
+            const container = document.getElementById('liveFeedContainer');
+            // Show recent
+            const sorted = [...grievances].sort((a,b) => b.date - a.date);
+            container.innerHTML = sorted.map(g => `
+                <div class="p-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-indigo-600">${g.id}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-500 font-bold">${g.district}</span>
+                        </div>
+                        <span class="text-[10px] text-gray-400">${timeSince(g.date)}</span>
+                    </div>
+                    <p class="text-xs text-gray-600 font-medium line-clamp-2">"${g.comment}"</p>
+                </div>
+            `).join('');
+        };
+
+        const renderOverdueTable = () => {
+            const container = document.getElementById('overdueGrievancesTable');
+            const overdue = grievances.filter(g => g.status !== 'Resolved' && (new Date() - g.date)/(1000*3600*24) > 7);
+            
+            container.innerHTML = overdue.map(g => {
+                const days = Math.floor((new Date() - g.date)/(1000*3600*24));
+                return `
+                    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                        <td class="px-3 py-3 font-bold text-slate-700">${g.id}</td>
+                        <td class="px-3 py-3 text-gray-600">${g.district}</td>
+                        <td class="px-3 py-3"><span class="px-2 py-1 rounded-full bg-gray-100 text-gray-500 font-bold text-[10px]">${g.category}</span></td>
+                        <td class="px-3 py-3 text-red-600 font-bold">${days} Days</td>
+                        <td class="px-3 py-3 text-gray-500">${g.assignee}</td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        // --- UTILS ---
+        function timeSince(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            const days = Math.floor(seconds / 86400);
+            if (days === 0) return "Today";
+            return days + "d ago";
+        }
+
+        // Init
+        updateKPIs();
+        renderCharts();
+        renderFeed();
+        renderOverdueTable();
+
+        // Notification Loop (Simulated using existing data)
+        setInterval(() => {
+            const g = grievances[Math.floor(Math.random() * grievances.length)];
+            const popup = document.getElementById('notification-popup');
+            document.getElementById('notif-content').innerHTML = `<b>${g.id}</b>: ${g.category} in ${g.district}`;
+            popup.classList.add('show');
+            setTimeout(() => popup.classList.remove('show'), 4000);
+        }, 12000);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,1518 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFLT Registration & Retention - Inactive View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --secondary: #64748b;
+            --indigo: #4f46e5;
+        }
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        #app-container { max-width: 1800px; margin: 0 auto; padding: 1.5rem; }
+        .card { background: var(--card); border-radius: 1.5rem; border: 1px solid var(--border); padding: 1.5rem; box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+        #left-sidebar { position: fixed; inset: 0 auto 0 0; width: 76px; background: white; border-right: 1px solid #e5e7eb; box-shadow: 2px 0 15px rgba(0,0,0,0.04); transition: width 0.35s ease; overflow: hidden; z-index: 50; }
+        #left-sidebar .sidebar-content { opacity: 0; transition: opacity 0.25s ease 0.08s; }
+        #left-sidebar:hover { width: 280px; }
+        #left-sidebar:hover .sidebar-content { opacity: 1; }
+        @media (max-width: 1023px) { #left-sidebar { transform: translateX(-100%); width: 280px !important; } #left-sidebar.mobile-open { transform: translateX(0); } }
+        #sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; display: none; }
+        #sidebar-overlay.active { display: block; }
+
+        .chartjs-legend-right {
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 12px;
+        }
+        .chartjs-legend-right::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chartjs-legend-right::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+<div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-95 flex items-center justify-center z-50">
+    <div class="w-14 h-14 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+</div>
+
+<button id="mobile-menu-btn" class="lg:hidden fixed top-4 left-4 z-50 bg-white p-2.5 rounded-xl shadow-md">
+    <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+</button>
+
+<aside id="left-sidebar">
+    <div class="sidebar-content p-5">
+        <div class="border-b pb-4 mb-4 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-indigo-600">Decks</h2>
+            <button id="close-sidebar-btn" class="lg:hidden text-gray-700"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <nav>
+            <ul class="space-y-1.5">
+                    <li>
+                        <a href="../index.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            <span class="ml-3">DFLT Status Deck</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/Benefeciary_status_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <span class="ml-3">Beneficiary Status</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/DFLT_2_Soft_launch_Map.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                            <span class="ml-3">DFLT Mapping</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/Trainings_Locations_Viewers.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">DFLT Session</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/trainers_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            <span class="ml-3">Trainers Progress</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/ic_data_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                            <span class="ml-3">IC Monitoring Deck</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/GRM Table.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">GRM Analytics Table</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/duration_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="ml-3">Duration Analysis</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/trainer_report.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="ml-3">Trainer Report Deck</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT-Target Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                            <span class="ml-3">Target Achievement</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT_Visuals_Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 bg-indigo-100 text-indigo-700 font-semibold ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                            <span class="ml-3">DFLT Visuals Deck</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT Pre-Post.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            <span class="ml-3">DFLT Pre Post</span>
+                        </a>
+                    </li>
+      </ul></nav>
+    </div>
+</aside>
+
+<div id="sidebar-overlay"></div>
+
+<main id="page-container" class="lg:ml-[76px] transition-all duration-300">
+
+    <div id="login-container" class="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50">
+        <div class="card p-8 w-full max-w-md">
+            <h2 class="text-2xl font-bold text-center mb-6">Login Required</h2>
+            <form id="login-form">
+                <div class="mb-5"><label class="block text-sm font-medium mb-2">Username</label><input type="text" id="username" required class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500"></div>
+                <div class="mb-6"><label class="block text-sm font-medium mb-2">Password</label><input type="password" id="password" required class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500"></div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold">Login</button>
+            </form>
+            <p id="login-error" class="text-red-600 text-center mt-4 hidden">Invalid credentials</p>
+        </div>
+    </div>
+
+    <div id="app-container" style="display:none;">
+
+        <header class="card mb-8">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <img src="https://www.sdpi.org/assets/images/sdpi-logo-2020.webp" alt="SDPI" class="h-12">
+                    <h1 class="text-3xl font-extrabold text-gray-900">Registration & Retention Trends</h1>
+                </div>
+                <div class="flex flex-wrap gap-4 items-center">
+                    <select id="month-filter" class="px-4 py-3 border rounded-xl min-w-[160px]">
+                        <option value="">All Months</option>
+                    </select>
+
+                    <select id="pc-filter" class="px-4 py-3 border rounded-xl min-w-[220px]">
+                        <option value="all">All Provincial Coordinators</option>
+                    </select>
+
+                    <select id="zone-filter" class="px-4 py-3 border rounded-xl min-w-[160px]">
+                        <option value="all">All Zones</option>
+                    </select>
+
+                    <select id="trainer-select" class="px-4 py-3 border rounded-xl min-w-[320px]">
+                        <option value="">Select Trainer / Pair</option>
+                    </select>
+
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="inactive-checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                        </label>
+                        <span class="text-sm font-medium text-gray-700">Show Inactive Trainers (no Day-2 last 4 days)</span>
+
+                        <select id="inactive-trainer-select" class="px-4 py-3 border border-gray-300 rounded-xl min-w-[300px] hidden focus:ring-2 focus:ring-red-400 focus:border-red-400">
+                            <option value="">Show All Inactive Trainers</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="chart-card" class="card">
+            <h2 id="chart-heading" class="text-2xl font-bold mb-6">Daily Trend</h2>
+            <div class="h-[580px] w-full">
+                <canvas id="main-chart"></canvas>
+            </div>
+            <div class="mt-6 text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-2" id="legend-explanation">
+                <p><strong>Pink line</strong> — Registered Beneficiaries</p>
+                <p><strong>Blue line</strong> — Attended Day 2 </p>
+                <p><strong>Green line</strong> — Verified Retention </p>
+                <p><strong>Yellow line</strong> — Not Verified Retention </p>
+            </div>
+        </div>
+        <div id="attendance-chart-card" class="card mt-10">
+            <h2 id="attendance-heading" class="text-2xl font-bold mb-6">Trainer Attendance Submissions</h2>
+            <div class="h-[420px] w-full">
+                <canvas id="attendance-chart"></canvas>
+            </div>
+            <div class="mt-4 text-sm text-gray-600">
+                <p>Shows each time a trainer submitted an attendance form (from <code>starttime</code>).</p>
+                <p>Hover over points to see date, time, session ID, and trainer/pair info.</p>
+            </div>
+        </div>
+                <div id="teaching-chart-card" class="card mt-10">
+            <h2 id="teaching-heading" class="text-2xl font-bold mb-6">Trainer Teaching Sessions</h2>
+            <div class="h-[420px] w-full">
+                <canvas id="teaching-chart"></canvas>
+            </div>
+            <div class="mt-4 text-sm text-gray-600">
+                <p>Shows daily count of teaching form submissions (from <code>aspc_teaching_form</code>).</p>
+                <p>Hover over points to see trainer, pair, start & end times.</p>
+            </div>
+        </div>
+
+                        <!-- Pre-Post Day 1 Chart -->
+            <div id="prepost-day1-card" class="card mt-10">
+                <h2 id="prepost-day1-heading" class="text-2xl font-bold mb-6">Pre-Post Day 1 Submissions</h2>
+                <div class="h-[420px] w-full">
+                    <canvas id="prepost-day1-chart"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <p>Daily count of Pre-Post Day 1 forms submitted (from <code>prepost_day1</code> table).</p>
+                    <p>Hover to see submission times and count.</p>
+                </div>
+            </div>
+
+            <!-- Pre-Post Day 2 Chart -->
+            <div id="prepost-day2-card" class="card mt-10">
+                <h2 id="prepost-day2-heading" class="text-2xl font-bold mb-6">Pre-Post Day 2 Submissions</h2>
+                <div class="h-[420px] w-full">
+                    <canvas id="prepost-day2-chart"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <p>Daily count of Pre-Post Day 2 forms submitted (from <code>prepost_day2</code> table).</p>
+                    <p>Hover to see submission times and count.</p>
+                </div>
+            </div>
+        </div>
+</main>
+
+<script>
+// ────────────────────────────────────────────────────────────────────────────────
+//   Updated:
+//   - PC & Zone filters now work in Inactive mode (both main chart + attendance)
+//   - Fixed Trainer Attendance Submissions — now shows points when data exists
+//   - Unified refresh logic for both charts
+//   Threshold = 4 days
+// ────────────────────────────────────────────────────────────────────────────────
+
+const INACTIVE_THRESHOLD_DAYS = 4;
+
+let currentUser = null;
+let allTrainers = [];
+let allBeneData = [];
+let allSessions = [];
+let allTeaching = [];
+let allPrepostDay1 = [];
+let allPrepostDay2 = [];
+let chart = null;
+let attendanceChart = null;
+let teachingChart = null;
+
+const ui_teach = {
+    heading: document.getElementById('teaching-heading')
+};
+let prepostDay1Chart = null;
+let prepostDay2Chart = null;
+
+const ui_prepost_day1 = {
+    heading: document.getElementById('prepost-day1-heading')
+};
+
+const ui_prepost_day2 = {
+    heading: document.getElementById('prepost-day2-heading')
+};
+
+
+const TODAY = new Date();
+
+const ui = {
+    monthSelect: document.getElementById('month-filter'),
+    pcSelect: document.getElementById('pc-filter'),
+    zoneSelect: document.getElementById('zone-filter'),
+    trainerSelect: document.getElementById('trainer-select'),
+    inactiveCheck: document.getElementById('inactive-checkbox'),
+    inactiveDropdown: document.getElementById('inactive-trainer-select'),
+    heading: document.getElementById('chart-heading'),
+    explanation: document.getElementById('legend-explanation')
+};
+
+const ui_att = {
+    heading: document.getElementById('attendance-heading'),
+    // card: document.getElementById('attendance-chart-card') // if needed later
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (!sessionStorage.getItem('isVerified')) {
+        window.location.href = '/login.html';
+        return;
+    }
+    currentUser = sessionStorage.getItem('username');
+    document.getElementById('login-container').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+    setupMobileSidebar();
+    startApplication();
+});
+
+async function startApplication() {
+    try {
+        const [beneResp, sessResp, teachResp, pre1Resp, pre2Resp] = await Promise.all([
+            fetch('/api/bene-data'),
+            fetch('/api/sessions'),
+            fetch('/api/teaching'),
+            fetch('/api/prepost-day1'),
+            fetch('/api/prepost-day2')
+        ]);
+        allBeneData    = await beneResp.json();
+        allSessions    = await sessResp.json();
+        allTeaching    = await teachResp.json();
+        allPrepostDay1 = await pre1Resp.json();
+        allPrepostDay2 = await pre2Resp.json();
+    } catch (err) {
+        console.error('Failed to load data:', err);
+        return;
+    }
+    await loadAllTrainers();
+    populateFilters();
+    attachEventListeners();
+    setDefaultMonthAndTrainer();
+    document.getElementById('loading-overlay').style.display = 'none';
+}
+
+function setDefaultMonthAndTrainer() {
+    const currentYearMonth = TODAY.toISOString().slice(0, 7);
+    const monthOption = Array.from(ui.monthSelect.options).find(opt => opt.value === currentYearMonth);
+    if (monthOption) {
+        ui.monthSelect.value = currentYearMonth;
+    } else if (ui.monthSelect.options.length > 1) {
+        ui.monthSelect.selectedIndex = 1;
+    }
+
+    if (ui.trainerSelect.options.length > 1) {
+        ui.trainerSelect.selectedIndex = 1;
+    }
+
+    refreshChart();
+}
+
+async function loadAllTrainers() {
+    const grouped = new Map();
+    allBeneData.forEach(row => {
+        if (!row.beneficiary_cnic || row.beneficiary_cnic.trim() === '') return;
+        const name  = (row.trainer_name      || '').trim();
+        const pair  = (row.pair              || '').trim();
+        const phone = (row.trainer_ph_number || '—').trim();
+        const k = name + '|' + pair;
+        if (!grouped.has(k)) grouped.set(k, { name, pair, phone, cnicSet: new Set() });
+        grouped.get(k).cnicSet.add(row.beneficiary_cnic.trim());
+    });
+    allTrainers = [...grouped.values()]
+        .map(g => ({ ...g, total: g.cnicSet.size }))
+        .sort((a, b) => b.total - a.total)
+        .map(r => {
+            const { name, pair, phone } = r;
+            const isPair  = pair && pair !== '(Solo)' && pair !== name;
+            const key     = isPair ? [name, pair].sort().join(' & ') : name;
+            const display = isPair ? `${key} (${phone})` : `${name} (${phone})`;
+            return { key, display, name, pair };
+        });
+}
+
+function populateFilters() {
+    const months = [...new Set(allBeneData.map(r => (r.SubmissionDate || '').slice(0, 7)).filter(m => m.length === 7))]
+        .sort((a, b) => b.localeCompare(a));
+    months.forEach(ym => {
+        const opt = document.createElement('option');
+        opt.value = ym;
+        opt.textContent = ym;
+        ui.monthSelect.appendChild(opt);
+    });
+
+    const pcs = [...new Set(allBeneData.map(r => (r.provincial_coordinator || '').trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b));
+    pcs.forEach(pc => {
+        if (pc) {
+            const opt = document.createElement('option');
+            opt.value = pc;
+            opt.textContent = pc;
+            ui.pcSelect.appendChild(opt);
+        }
+    });
+
+    updateZoneFilter('all');
+}
+
+function updateZoneFilter(selectedPC = 'all') {
+    ui.zoneSelect.innerHTML = '<option value="all">All Zones</option>';
+
+    let filtered = allBeneData;
+    if (selectedPC !== 'all') filtered = filtered.filter(r => (r.provincial_coordinator || '').trim() === selectedPC);
+    const zones = [...new Set(filtered.map(r => (r.zones || '').trim()).filter(Boolean))].sort();
+    zones.forEach(z => {
+        const opt = document.createElement('option');
+        opt.value = z;
+        opt.textContent = z;
+        ui.zoneSelect.appendChild(opt);
+    });
+
+    updateTrainerFilter(selectedPC, ui.zoneSelect.value);
+}
+
+function updateTrainerFilter(selectedPC = 'all', selectedZone = 'all') {
+    ui.trainerSelect.innerHTML = '<option value="">Select Trainer / Pair</option>';
+
+    let filtered = allBeneData.filter(r => r.beneficiary_cnic && r.beneficiary_cnic.trim() !== '');
+    if (selectedPC   !== 'all') filtered = filtered.filter(r => (r.provincial_coordinator || '').trim() === selectedPC);
+    if (selectedZone !== 'all') filtered = filtered.filter(r => (r.zones || '').trim() === selectedZone);
+
+    const seen = new Set();
+    const pairs = new Map();
+    filtered.forEach(r => {
+        const name  = (r.trainer_name      || '').trim();
+        const pair  = (r.pair              || '').trim();
+        const phone = (r.trainer_ph_number || '—').trim();
+        const isPair = pair && pair !== '(Solo)' && pair !== name;
+        const key    = isPair ? [name, pair].sort().join(' & ') : name;
+        if (!seen.has(key)) {
+            seen.add(key);
+            pairs.set(key, { display: isPair ? `${key} (${phone})` : `${name} (${phone})` });
+        }
+    });
+    [...pairs.keys()].sort().forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = pairs.get(key).display;
+        ui.trainerSelect.appendChild(opt);
+    });
+}
+
+function attachEventListeners() {
+    ui.pcSelect.addEventListener('change', () => {
+        updateZoneFilter(ui.pcSelect.value);
+        refreshChart();
+    });
+
+    ui.zoneSelect.addEventListener('change', () => {
+        updateTrainerFilter(ui.pcSelect.value, ui.zoneSelect.value);
+        refreshChart();
+    });
+
+    [ui.monthSelect, ui.trainerSelect, ui.inactiveCheck, ui.inactiveDropdown].forEach(el => {
+        el.addEventListener('change', refreshChart);
+    });
+}
+
+async function refreshChart() {
+    const isInactive = ui.inactiveCheck.checked;
+    ui.inactiveDropdown.classList.toggle('hidden', !isInactive);
+
+    destroyChart();
+    destroyAttendanceChart();
+    destroyTeachingChart();
+    destroyPrepostDay1Chart();   // new
+    destroyPrepostDay2Chart();   // new
+
+    if (ui.explanation) {
+        ui.explanation.style.display = isInactive ? 'none' : 'grid';
+    }
+
+    if (isInactive) {
+        await handleInactiveMode();
+    } else {
+        await handleNormalMode();
+    }
+
+    await renderAttendanceForCurrentSelection();
+    await renderTeachingForCurrentSelection();   // ← added
+    await renderPrepostDay1ForCurrentSelection();   // new
+    await renderPrepostDay2ForCurrentSelection();   // new
+}
+
+async function handleNormalMode() {
+    const month      = ui.monthSelect.value.trim() || '';
+    const pc         = ui.pcSelect.value;
+    const zone       = ui.zoneSelect.value;
+    const trainerKey = ui.trainerSelect.value;
+
+    if (!trainerKey) {
+        ui.heading.textContent = "Select a trainer to view data";
+        return;
+    }
+
+    const trainer = allTrainers.find(t => t.key === trainerKey);
+    if (!trainer) {
+        ui.heading.textContent = "Trainer not found";
+        return;
+    }
+
+    const data = getDailyCounts(month, pc, zone, trainer.name, trainer.pair);
+
+    if (data.length === 0) {
+        ui.heading.textContent = `No data for ${trainer.display} ${month ? `(${month})` : ''}`;
+        return;
+    }
+
+    ui.heading.textContent = `${trainer.display} — ${month || 'All Time'}`;
+    renderNormalChartWithVerified(data);
+}
+
+async function handleInactiveMode() {
+    const month = ui.monthSelect.value.trim() || '';
+    const pc    = ui.pcSelect.value;
+    const zone  = ui.zoneSelect.value;
+
+    const filtered = await getInactiveTrainers(month, pc, zone);
+
+    if (filtered.length === 0) {
+        ui.heading.textContent = month 
+            ? `No inactive trainers found in ${month}` 
+            : "No inactive trainers found (no Day-2 in last 4+ days with recent registrations)";
+        return;
+    }
+
+    const previousSelectedKey = ui.inactiveDropdown.dataset.lastSelected || "";
+
+    ui.inactiveDropdown.innerHTML = '<option value="">Show All Inactive Trainers</option>';
+    filtered.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.key;
+        opt.textContent = item.label;
+        ui.inactiveDropdown.appendChild(opt);
+    });
+
+    if (previousSelectedKey && filtered.some(t => t.key === previousSelectedKey)) {
+        ui.inactiveDropdown.value = previousSelectedKey;
+    }
+
+    ui.inactiveDropdown.dataset.lastSelected = ui.inactiveDropdown.value;
+
+    const chosenKey = ui.inactiveDropdown.value.trim();
+    const selected = chosenKey ? filtered.find(t => t.key === chosenKey) : null;
+
+    if (selected) {
+        const data = getTrainerDailyData(month, selected.trainer, selected.pair, pc, zone);
+        if (data.length === 0) {
+            ui.heading.textContent = `No registration/attendance data for ${selected.label.split(' (')[0]}`;
+            return;
+        }
+        ui.heading.textContent = `${selected.label} — ${month || 'All Time'}`;
+        renderSingleInactiveTrainerChart(data, selected.label.split(' (')[0]);
+    } else {
+        const datasets = [];
+        filtered.forEach(item => {
+            const points = getTrainerDailyData(month, item.trainer, item.pair, pc, zone);
+
+            datasets.push({
+                label: `${item.label} - Registered`,
+                data: points.map(p => ({ x: p.x, y: p.registered })),
+                borderColor: '#ec4899',
+                backgroundColor: 'rgba(236,72,153,0.08)',
+                tension: 0.2,
+                pointRadius: 2.5,
+                borderWidth: 2
+            });
+
+            datasets.push({
+                label: `${item.label} - Attended Day 2`,
+                data: points.map(p => ({ x: p.x, y: p.attended })),
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59,130,246,0.08)',
+                tension: 0.2,
+                pointRadius: 2.5,
+                borderWidth: 2
+            });
+        });
+
+        ui.heading.textContent = `Top Inactive Trainers ${month ? `(${month})` : '(All Time)'} — ${filtered.length} shown`;
+        renderInactiveMultiTrainerChart(datasets);
+    }
+}
+
+async function getInactiveTrainers(month = '', selectedPC = 'all', selectedZone = 'all') {
+    const isAllTime = !month;
+
+    // Filter base data
+    let base = allBeneData;
+    if (month)           base = base.filter(r => (r.SubmissionDate || '').slice(0, 7) === month);
+    if (selectedPC   !== 'all') base = base.filter(r => (r.provincial_coordinator || '').trim() === selectedPC);
+    if (selectedZone !== 'all') base = base.filter(r => (r.zones || '').trim() === selectedZone);
+
+    // Last Day-2 per trainer+pair (attendance_status = 1)
+    const day2Map = new Map();
+    base.forEach(r => {
+        if (String(r.attendance_status) !== '1') return;
+        const k = (r.trainer_name || '').trim() + '|' + (r.pair || '').trim();
+        const day = (r.SubmissionDate || '').slice(0, 10);
+        if (!day2Map.has(k) || day > day2Map.get(k)) day2Map.set(k, day);
+    });
+
+    // Cutoff for all-time mode
+    const cutoff = new Date(TODAY);
+    cutoff.setDate(cutoff.getDate() - INACTIVE_THRESHOLD_DAYS);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+    // All trainer+pair combos that appear in base
+    const allKeys = new Map();
+    base.forEach(r => {
+        const tName = (r.trainer_name || '').trim();
+        const pName = (r.pair || '').trim();
+        if (!tName) return;
+        const k = tName + '|' + pName;
+        if (!allKeys.has(k)) allKeys.set(k, { tName, pName });
+    });
+
+    const candidates = [];
+
+    allKeys.forEach(({ tName, pName }, k) => {
+        const lastDay2 = day2Map.get(k) || '1900-01-01';
+        if (isAllTime && lastDay2 >= cutoffStr) return;
+
+        // Count registrations after last_day2
+        const regAfter = base.filter(r => {
+            if ((r.trainer_name || '').trim() !== tName) return false;
+            const rPair = (r.pair || '').trim();
+            if (pName && pName !== '(Solo)') {
+                if (rPair !== pName) return false;
+            } else {
+                if (rPair && rPair !== '(Solo)') return false;
+            }
+            return (r.SubmissionDate || '').slice(0, 10) > lastDay2;
+        }).length;
+
+        if (regAfter > 0) {
+            const lastDate = new Date(lastDay2 + 'T00:00:00');
+            const daysSince = isNaN(lastDate.getTime()) ? Infinity : Math.floor((TODAY - lastDate) / 86400000);
+
+            if (daysSince >= INACTIVE_THRESHOLD_DAYS) {
+                const key = pName && pName !== '(Solo)' && pName !== tName
+                    ? [tName, pName].sort().join(' & ')
+                    : tName;
+
+                candidates.push({
+                    key,
+                    trainer: tName,
+                    pair: pName,
+                    lastDay2: lastDay2 === '1900-01-01' ? 'never' : lastDay2,
+                    daysGap: daysSince,
+                    label: `${key} (${daysSince} days no Day-2)`
+                });
+            }
+        }
+    });
+
+    candidates.sort((a, b) => b.daysGap - a.daysGap);
+    return candidates.slice(0, 12);
+}
+
+function getTrainerDailyData(month = '', trainerName, pairName, pc = 'all', zone = 'all') {
+    const filtered = allBeneData.filter(r => {
+        if ((r.trainer_name || '').trim() !== trainerName) return false;
+        const rPair = (r.pair || '').trim();
+        if (pairName && pairName.trim() !== '' && pairName !== '(Solo)') {
+            if (rPair !== pairName) return false;
+        } else {
+            if (rPair && rPair !== '(Solo)') return false;
+        }
+        if (month && (r.SubmissionDate || '').slice(0, 7) !== month) return false;
+        if (pc   !== 'all' && (r.provincial_coordinator || '').trim() !== pc)   return false;
+        if (zone !== 'all' && (r.zones || '').trim() !== zone) return false;
+        return true;
+    });
+
+    const dayMap = new Map();
+    filtered.forEach(r => {
+        const day  = (r.SubmissionDate || '').slice(0, 10);
+        const cnic = (r.beneficiary_cnic || '').trim();
+        if (!cnic || !day) return;
+        if (!dayMap.has(day)) dayMap.set(day, { reg: new Set(), att: new Set() });
+        dayMap.get(day).reg.add(cnic);
+        if (String(r.attendance_status) === '1') dayMap.get(day).att.add(cnic);
+    });
+
+    return [...dayMap.keys()].sort().map(day => ({
+        x: new Date(day + 'T00:00:00'),
+        registered: dayMap.get(day).reg.size,
+        attended:   dayMap.get(day).att.size
+    }));
+}
+
+function getDailyCounts(month, pc, zone, trainerName, pairName) {
+    const filtered = allBeneData.filter(r => {
+        if ((r.trainer_name || '').trim() !== trainerName) return false;
+        const rPair = (r.pair || '').trim();
+        if (pairName && pairName.trim() !== '' && pairName !== '(Solo)') {
+            if (rPair !== pairName) return false;
+        } else {
+            if (rPair && rPair !== '(Solo)') return false;
+        }
+        if (month && (r.SubmissionDate || '').slice(0, 7) !== month) return false;
+        if (pc   !== 'all' && (r.provincial_coordinator || '').trim() !== pc)   return false;
+        if (zone !== 'all' && (r.zones || '').trim() !== zone) return false;
+        return true;
+    });
+
+    const dayMap = new Map();
+    filtered.forEach(r => {
+        const day  = (r.SubmissionDate || '').slice(0, 10);
+        const cnic = (r.beneficiary_cnic || '').trim();
+        if (!cnic || !day) return;
+        if (!dayMap.has(day)) dayMap.set(day, { reg: new Set(), att: new Set(), ver: new Set(), notVer: new Set() });
+        const e = dayMap.get(day);
+        e.reg.add(cnic);
+        if (String(r.attendance_status) === '1')                           e.att.add(cnic);
+        if ((r.verified_retention_status || '').trim() === 'Verified')     e.ver.add(cnic);
+        if ((r.verified_retention_status || '').trim() === 'Not Verified') e.notVer.add(cnic);
+    });
+
+    return [...dayMap.keys()].sort().map(day => ({
+        x:          new Date(day + 'T00:00:00'),
+        registered: dayMap.get(day).reg.size,
+        attended:   dayMap.get(day).att.size,
+        verified:   dayMap.get(day).ver.size,
+        notVerified:dayMap.get(day).notVer.size
+    }));
+}
+
+// ── Attendance Functions ─────────────────────────────────────────────────────
+
+function destroyAttendanceChart() {
+    if (attendanceChart) {
+        attendanceChart.destroy();
+        attendanceChart = null;
+    }
+}
+
+function getTrainerAttendanceSubmissions(month = '', trainerName, pairName, pc = 'all', zone = 'all') {
+    const filtered = allSessions.filter(r => {
+        if ((r.trainer_name || '').trim() !== trainerName) return false;
+        const rPair = (r.pair || '').trim();
+        if (pairName && pairName.trim() !== '' && pairName !== '(Solo)') {
+            if (rPair !== pairName) return false;
+        } else {
+            if (rPair && rPair !== '(Solo)') return false;
+        }
+        if (!r.starttime || r.starttime.trim() === '') return false;
+        if (month && (r.starttime || '').slice(0, 7) !== month) return false;
+        if (pc   !== 'all' && (r.provincial_coordinator || '').trim() !== pc)   return false;
+        if (zone !== 'all' && (r.zones || '').trim() !== zone) return false;
+        return true;
+    });
+
+    const dayMap = new Map();
+    filtered.forEach(r => {
+        const date      = (r.starttime || '').slice(0, 10);
+        const timeStr   = (r.starttime || '').slice(11, 16);
+        const sessionId = r.session_id || '—';
+        const pairVal   = r.pair || '—';
+        if (!dayMap.has(date)) dayMap.set(date, { count: 0, details: [] });
+        const entry = dayMap.get(date);
+        entry.count++;
+        entry.details.push(`${timeStr}|${sessionId}|${pairVal}`);
+    });
+
+    return [...dayMap.keys()].sort().map(dateStr => {
+        const entry = dayMap.get(dateStr);
+        const tooltipLines = entry.details.map(item => {
+            const [timePart, sessionId, pairVal] = item.split('|');
+            const timeStr = new Date(`2000-01-01T${timePart}:00`).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            }).toLowerCase();
+            return `${timeStr} — Session: ${sessionId} (Pair: ${pairVal})`;
+        });
+        return {
+            x: new Date(dateStr + 'T00:00:00'),
+            y: entry.count,
+            date: dateStr,
+            tooltipDetails: tooltipLines.length > 0 ? tooltipLines : ['No detailed info']
+        };
+    });
+}
+function renderAttendanceChart(dataPoints, titleText) {
+    destroyAttendanceChart();
+
+    if (dataPoints.length === 0) {
+        ui_att.heading.textContent = `${titleText} — No submissions found`;
+        return;
+    }
+
+    ui_att.heading.textContent = titleText;
+
+    attendanceChart = new Chart(document.getElementById('attendance-chart'), {
+        type: 'line',   // or 'bar' if you prefer bars
+        data: {
+            datasets: [{
+                label: 'Daily Attendance Form Submissions',
+                data: dataPoints,
+                backgroundColor: 'rgba(139, 92, 246, 0.25)',
+                borderColor: '#8b5cf6',
+                borderWidth: 2.5,
+                tension: 0.15,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#8b5cf6',
+                pointBorderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: { 
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        title: (ctx) => ctx[0].raw.date,
+                        label: (ctx) => {
+                            const count = ctx.parsed.y;
+                            const lines = [`Submissions this day: ${count}`];
+                            if (ctx.raw.tooltipDetails && ctx.raw.tooltipDetails[0] !== 'No detailed info') {
+                                lines.push('');
+                                lines.push('Details:');
+                                ctx.raw.tooltipDetails.forEach(detail => lines.push(detail));
+                            }
+                            return lines;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day' },
+                    title: { display: true, text: 'Date' }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Number of Submissions' },
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+}
+async function renderAttendanceForCurrentSelection() {
+    const month = ui.monthSelect.value.trim() || '';
+    const pc    = ui.pcSelect.value;
+    const zone  = ui.zoneSelect.value;
+
+    let trainerName = null;
+    let pairName    = null;
+    let chartTitle  = "Trainer Attendance Submissions";
+
+    const isInactive = ui.inactiveCheck.checked;
+    const chosenKey  = ui.inactiveDropdown.value.trim();
+
+    if (isInactive && chosenKey) {
+        const filtered = await getInactiveTrainers(month, pc, zone);
+        const selected = filtered.find(t => t.key === chosenKey);
+        if (selected) {
+            trainerName = selected.trainer;
+            pairName    = selected.pair;
+            chartTitle  = `${selected.label.split(' (')[0]} — Attendance Submissions`;
+        }
+    } else if (!isInactive && ui.trainerSelect.value) {
+        const trainer = allTrainers.find(t => t.key === ui.trainerSelect.value);
+        if (trainer) {
+            trainerName = trainer.name;
+            pairName    = trainer.pair;
+            chartTitle  = `${trainer.display} — Attendance Submissions`;
+        }
+    }
+
+    if (!trainerName) {
+        ui_att.heading.textContent = "Select a trainer to view attendance submissions";
+        destroyAttendanceChart();
+        return;
+    }
+
+    const points = getTrainerAttendanceSubmissions(month, trainerName, pairName, pc, zone);
+    renderAttendanceChart(points, chartTitle);
+}
+
+
+
+function destroyTeachingChart() {
+    if (teachingChart) {
+        teachingChart.destroy();
+        teachingChart = null;
+    }
+}
+
+async function renderTeachingForCurrentSelection() {
+    const month = ui.monthSelect.value.trim() || '';
+    const pc    = ui.pcSelect.value;
+    const zone  = ui.zoneSelect.value;
+
+    let trainerName = null;
+    let pairName    = null;
+    let chartTitle  = "Trainer Teaching Sessions";
+
+    const isInactive = ui.inactiveCheck.checked;
+    const chosenKey  = ui.inactiveDropdown.value.trim();
+
+    if (isInactive && chosenKey) {
+        const filtered = await getInactiveTrainers(month, pc, zone);
+        const selected = filtered.find(t => t.key === chosenKey);
+        if (selected) {
+            trainerName = selected.trainer;
+            pairName    = selected.pair;
+            chartTitle  = `${selected.label.split(' (')[0]} — Teaching Sessions`;
+        }
+    } else if (!isInactive && ui.trainerSelect.value) {
+        const trainer = allTrainers.find(t => t.key === ui.trainerSelect.value);
+        if (trainer) {
+            trainerName = trainer.name;
+            pairName    = trainer.pair;
+            chartTitle  = `${trainer.display} — Teaching Sessions`;
+        }
+    }
+
+    if (!trainerName) {
+        ui_teach.heading.textContent = "Select a trainer to view teaching sessions";
+        destroyTeachingChart();
+        return;
+    }
+
+    const points = getTrainerTeachingSubmissions(month, trainerName, pairName, pc, zone);
+    renderTeachingChart(points, chartTitle);
+}
+
+async function renderPrepostDay1ForCurrentSelection() {
+    const month = ui.monthSelect.value.trim() || '';
+    const pc    = ui.pcSelect.value;
+    const zone  = ui.zoneSelect.value;
+
+    let trainerName = null;
+    let pairName    = null;
+    let chartTitle  = "Pre-Post Day 1 Submissions";
+
+    const isInactive = ui.inactiveCheck.checked;
+    const chosenKey  = ui.inactiveDropdown.value.trim();
+
+    if (isInactive && chosenKey) {
+        const filtered = await getInactiveTrainers(month, pc, zone);
+        const selected = filtered.find(t => t.key === chosenKey);
+        if (selected) {
+            trainerName = selected.trainer;
+            pairName    = selected.pair;
+            chartTitle  = `${selected.label.split(' (')[0]} — Day 1 Pre/Post`;
+        }
+    } else if (!isInactive && ui.trainerSelect.value) {
+        const trainer = allTrainers.find(t => t.key === ui.trainerSelect.value);
+        if (trainer) {
+            trainerName = trainer.name;
+            pairName    = trainer.pair;
+            chartTitle  = `${trainer.display} — Day 1 Pre/Post`;
+        }
+    }
+
+    if (!trainerName) {
+        ui_prepost_day1.heading.textContent = "Select a trainer to view Day-1 pre/post submissions";
+        destroyPrepostDay1Chart();
+        return;
+    }
+
+    const points = getPrePostDay1Submissions(month, trainerName, pairName, pc, zone);
+    renderPrepostDay1Chart(points, chartTitle);
+}
+
+async function renderPrepostDay2ForCurrentSelection() {
+    const month = ui.monthSelect.value.trim() || '';
+    const pc    = ui.pcSelect.value;
+    const zone  = ui.zoneSelect.value;
+
+    let trainerName = null;
+    let pairName    = null;
+    let chartTitle  = "Pre-Post Day 2 Submissions";
+
+    const isInactive = ui.inactiveCheck.checked;
+    const chosenKey  = ui.inactiveDropdown.value.trim();
+
+    if (isInactive && chosenKey) {
+        const filtered = await getInactiveTrainers(month, pc, zone);
+        const selected = filtered.find(t => t.key === chosenKey);
+        if (selected) {
+            trainerName = selected.trainer;
+            pairName    = selected.pair;
+            chartTitle  = `${selected.label.split(' (')[0]} — Day 2 Pre/Post`;
+        }
+    } else if (!isInactive && ui.trainerSelect.value) {
+        const trainer = allTrainers.find(t => t.key === ui.trainerSelect.value);
+        if (trainer) {
+            trainerName = trainer.name;
+            pairName    = trainer.pair;
+            chartTitle  = `${trainer.display} — Day 2 Pre/Post`;
+        }
+    }
+
+    if (!trainerName) {
+        ui_prepost_day2.heading.textContent = "Select a trainer to view Day-2 pre/post submissions";
+        destroyPrepostDay2Chart();
+        return;
+    }
+
+    const points = getPrePostDay2Submissions(month, trainerName, pairName, pc, zone);
+    renderPrepostDay2Chart(points, chartTitle);
+}
+
+function getTrainerTeachingSubmissions(month = '', trainerName, pairName, pc = 'all', zone = 'all') {
+    const filtered = allTeaching.filter(r => {
+        if ((r.trainer_name || '').trim() !== trainerName) return false;
+        const rPair = (r.pair || '').trim();
+        if (pairName && pairName.trim() !== '' && pairName !== '(Solo)') {
+            if (rPair !== pairName) return false;
+        } else {
+            if (rPair && rPair !== '(Solo)') return false;
+        }
+        if (!r.starttime || r.starttime.trim() === '') return false;
+        if (month && (r.starttime || '').slice(0, 7) !== month) return false;
+        if (pc   !== 'all' && (r.provincial_coordinator || '').trim() !== pc)   return false;
+        if (zone !== 'all' && (r.zones || '').trim() !== zone) return false;
+        return true;
+    });
+
+    if (filtered.length === 0) return [];
+
+    const countMap   = new Map();
+    const detailsMap = new Map();
+    filtered.forEach(r => {
+        const date      = (r.starttime || '').slice(0, 10);
+        const startPart = (r.starttime || '').slice(11, 16);
+        const endPart   = (r.endtime   || '').slice(11, 16);
+        const pairVal   = r.pair || '—';
+        countMap.set(date, (countMap.get(date) || 0) + 1);
+        const prev = detailsMap.get(date) || '';
+        detailsMap.set(date, prev ? prev + ' • ' + `${startPart}|${endPart}|${pairVal}` : `${startPart}|${endPart}|${pairVal}`);
+    });
+
+    // Determine date range
+    let startDate, endDate;
+    if (month) {
+        const [year, mon] = month.split('-');
+        startDate = new Date(Number(year), Number(mon) - 1, 1);
+        endDate   = new Date(Number(year), Number(mon), 0);
+    } else {
+        const dates = [...countMap.keys()].sort();
+        startDate = new Date(dates[0] + 'T00:00:00');
+        endDate   = new Date(dates[dates.length - 1] + 'T00:00:00');
+    }
+
+    // Safety limit on range size
+    const MAX_DAYS = 731;
+    const actualDays = Math.floor((endDate - startDate) / 86400000) + 1;
+    if (actualDays > MAX_DAYS) {
+        startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - MAX_DAYS);
+    }
+
+    // Build full series with zeros
+    const dataPoints = [];
+    let current = new Date(startDate);
+
+    while (current <= endDate) {
+        const dateStr    = current.toISOString().slice(0, 10);
+        const count      = countMap.get(dateStr) || 0;
+        const rawDetails = detailsMap.get(dateStr) || '';
+
+        let tooltipLines = [`Sessions this day: ${count}`];
+
+        if (count > 0 && rawDetails) {
+            rawDetails.split(' • ').forEach(s => {
+                const [startPart, endPart, pairVal] = s.split('|');
+                const startTime = new Date(`2000-01-01T${startPart}:00`)
+                    .toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true})
+                    .toLowerCase();
+                const endTime = new Date(`2000-01-01T${endPart}:00`)
+                    .toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true})
+                    .toLowerCase();
+                tooltipLines.push(`${startTime} – ${endTime}  |  Pair: ${pairVal}`);
+            });
+        } else if (count === 0) {
+            tooltipLines.push("(no teaching sessions recorded this day)");
+        }
+
+        dataPoints.push({
+            x: new Date(dateStr + 'T00:00:00'),
+            y: count,
+            date: dateStr,
+            tooltipDetails: tooltipLines
+        });
+
+        current.setDate(current.getDate() + 1);
+    }
+
+    return dataPoints;
+}
+
+function renderTeachingChart(dataPoints, titleText) {
+    destroyTeachingChart();
+
+    if (dataPoints.length === 0) {
+        ui_teach.heading.textContent = `${titleText} — No teaching sessions found`;
+        return;
+    }
+
+    ui_teach.heading.textContent = titleText;
+
+    teachingChart = new Chart(document.getElementById('teaching-chart'), {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Daily Teaching Form Submissions',
+                data: dataPoints,
+                backgroundColor: 'rgba(236, 72, 153, 0.18)',   // pinkish tone
+                borderColor: '#ec4899',
+                borderWidth: 2.5,
+                tension: 0.15,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#ec4899',
+                pointBorderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: { 
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        title: (ctx) => ctx[0].raw.date,
+                        label: (ctx) => ctx.raw.tooltipDetails || [`Submissions: ${ctx.parsed.y}`]
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day' },
+                    title: { display: true, text: 'Date' }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Number of Teaching Sessions' },
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderNormalChartWithVerified(dataPoints) {
+    destroyChart();
+    chart = new Chart(document.getElementById('main-chart'), {
+        type: 'line',
+        data: { datasets: [
+            { label: 'Registered',      data: dataPoints.map(d => ({x:d.x, y:d.registered})), borderColor: '#ec4899', fill: true, tension: 0.2 },
+            { label: 'Attended Day 2',  data: dataPoints.map(d => ({x:d.x, y:d.attended})),   borderColor: '#3b82f6', fill: true, tension: 0.2 },
+            { label: 'Verified',        data: dataPoints.map(d => ({x:d.x, y:d.verified})),   borderColor: '#10b981', fill: true, tension: 0.2 },
+            { label: 'Not Verified',    data: dataPoints.map(d => ({x:d.x, y:d.notVerified})), borderColor: '#f59e0b', fill: true, tension: 0.2 }
+        ]},
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                x: { type: 'time', time: { unit: 'day' }, title: { display: true, text: 'Date' } },
+                y: { beginAtZero: true, title: { display: true, text: 'Count' } }
+            }
+        }
+    });
+}
+
+function renderSingleInactiveTrainerChart(dataPoints, trainerLabel) {
+    destroyChart();
+    if (dataPoints.length === 0) return;
+
+    chart = new Chart(document.getElementById('main-chart'), {
+        type: 'line',
+        data: {
+            datasets: [
+                {
+                    label: `${trainerLabel} - Registered`,
+                    data: dataPoints.map(d => ({x: d.x, y: d.registered})),
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236,72,153,0.1)',
+                    tension: 0.25,
+                    fill: true,
+                    pointRadius: 3,
+                    borderWidth: 2.5
+                },
+                {
+                    label: `${trainerLabel} - Attended Day 2`,
+                    data: dataPoints.map(d => ({x: d.x, y: d.attended})),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.1)',
+                    tension: 0.25,
+                    fill: true,
+                    pointRadius: 3,
+                    borderWidth: 2.5
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                x: { type: 'time', time: { unit: 'day' }, title: { display: true, text: 'Date' } },
+                y: { beginAtZero: true, title: { display: true, text: 'Count' } }
+            }
+        }
+    });
+}
+
+function renderInactiveMultiTrainerChart(datasets) {
+    destroyChart();
+
+    chart = new Chart(document.getElementById('main-chart'), {
+        type: 'line',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { boxWidth: 14, padding: 16, font: { size: 12 } },
+                    maxWidth: 340
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day' },
+                    title: { display: true, text: 'Date' }
+                },
+                y: {
+                    beginAtZero: true,
+                    position: 'left',
+                    title: { display: true, text: 'Count' },
+                    grid: { drawOnChartArea: true }
+                }
+            }
+        }
+    });
+}
+
+
+function destroyChart() {
+    if (chart) {
+        chart.destroy();
+        chart = null;
+    }
+}
+
+// ── Pre-Post Day 1 ──────────────────────────────────────────────────────────
+
+function destroyPrepostDay1Chart() {
+    if (prepostDay1Chart) {
+        prepostDay1Chart.destroy();
+        prepostDay1Chart = null;
+    }
+}
+
+function getPrePostDay1Submissions(month = '', trainerName, pairName, pc = 'all', zone = 'all') {
+    return getPrePostSubmissionsGeneric(allPrepostDay1, month, trainerName, pairName, pc, zone);
+}
+
+function renderPrepostDay1Chart(dataPoints, titleText) {
+    destroyPrepostDay1Chart();
+
+    if (dataPoints.length === 0) {
+        ui_prepost_day1.heading.textContent = `${titleText} — No Day-1 pre/post submissions`;
+        return;
+    }
+
+    ui_prepost_day1.heading.textContent = titleText;
+
+    prepostDay1Chart = new Chart(document.getElementById('prepost-day1-chart'), getPrePostChartConfig(dataPoints, titleText, '#6366f1')); // indigo
+}
+
+// ── Pre-Post Day 2 ──────────────────────────────────────────────────────────
+
+function destroyPrepostDay2Chart() {
+    if (prepostDay2Chart) {
+        prepostDay2Chart.destroy();
+        prepostDay2Chart = null;
+    }
+}
+
+function getPrePostDay2Submissions(month = '', trainerName, pairName, pc = 'all', zone = 'all') {
+    return getPrePostSubmissionsGeneric(allPrepostDay2, month, trainerName, pairName, pc, zone);
+}
+
+function renderPrepostDay2Chart(dataPoints, titleText) {
+    destroyPrepostDay2Chart();
+
+    if (dataPoints.length === 0) {
+        ui_prepost_day2.heading.textContent = `${titleText} — No Day-2 pre/post submissions`;
+        return;
+    }
+
+    ui_prepost_day2.heading.textContent = titleText;
+
+    prepostDay2Chart = new Chart(document.getElementById('prepost-day2-chart'), getPrePostChartConfig(dataPoints, titleText, '#f59e0b')); // amber
+}
+
+// ── Shared generic logic for both Day 1 & Day 2 ─────────────────────────────
+
+function getPrePostSubmissionsGeneric(tableData, month = '', trainerName, pairName, pc = 'all', zone = 'all') {
+    const filtered = tableData.filter(r => {
+        if ((r.trainer_name || '').trim() !== trainerName) return false;
+        const rPair = (r.pair || '').trim();
+        if (pairName && pairName.trim() !== '' && pairName !== '(Solo)') {
+            if (rPair !== pairName) return false;
+        } else {
+            if (rPair && rPair !== '(Solo)') return false;
+        }
+        if (!r.starttime || r.starttime.trim() === '') return false;
+        if (month && (r.starttime || '').slice(0, 7) !== month) return false;
+        if (pc   !== 'all' && (r.provincial_coordinator || '').trim() !== pc)   return false;
+        if (zone !== 'all' && (r.zones || '').trim() !== zone) return false;
+        return true;
+    });
+
+    if (filtered.length === 0) return [];
+
+    const countMap = new Map();
+    const timesMap = new Map();
+    filtered.forEach(r => {
+        const date     = (r.starttime || '').slice(0, 10);
+        const timePart = (r.starttime || '').slice(11, 16);
+        countMap.set(date, (countMap.get(date) || 0) + 1);
+        const prev = timesMap.get(date) || '';
+        timesMap.set(date, prev ? prev + ' • ' + timePart : timePart);
+    });
+
+    // Determine date range
+    let startDate, endDate;
+    if (month) {
+        const [year, mon] = month.split('-');
+        startDate = new Date(Number(year), Number(mon) - 1, 1);
+        endDate   = new Date(Number(year), Number(mon), 0);
+    } else {
+        const dates = [...countMap.keys()].sort();
+        startDate = new Date(dates[0] + 'T00:00:00');
+        endDate   = new Date(dates[dates.length - 1] + 'T00:00:00');
+    }
+
+    // Limit range size
+    const MAX_DAYS = 731;
+    const actualDays = Math.floor((endDate - startDate) / 86400000) + 1;
+    if (actualDays > MAX_DAYS) {
+        startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - MAX_DAYS);
+    }
+
+    // Build full series with zeros
+    const dataPoints = [];
+    let current = new Date(startDate);
+
+    while (current <= endDate) {
+        const dateStr  = current.toISOString().slice(0, 10);
+        const count    = countMap.get(dateStr) || 0;
+        const rawTimes = timesMap.get(dateStr) || '';
+
+        let tooltipLines = [`Submissions this day: ${count}`];
+
+        if (count > 0 && rawTimes) {
+            rawTimes.split(' • ').forEach(t => {
+                const timeStr = new Date(`2000-01-01T${t}:00`)
+                    .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+                    .toLowerCase();
+                tooltipLines.push(timeStr);
+            });
+        } else if (count === 0) {
+            tooltipLines.push("(no pre-post submissions this day)");
+        }
+
+        dataPoints.push({
+            x: new Date(dateStr + 'T00:00:00'),
+            y: count,
+            date: dateStr,
+            tooltipDetails: tooltipLines
+        });
+
+        current.setDate(current.getDate() + 1);
+    }
+
+    return dataPoints;
+}
+
+function getPrePostChartConfig(dataPoints, titleText, borderColor) {
+    return {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Daily Pre-Post Submissions',
+                data: dataPoints,
+                backgroundColor: borderColor + '33', // 20% opacity
+                borderColor: borderColor,
+                borderWidth: 2.5,
+                tension: 0.15,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: borderColor,
+                pointBorderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        title: (ctx) => ctx[0].raw.date,
+                        label: (ctx) => ctx.raw.tooltipDetails || [`Count: ${ctx.parsed.y}`]
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: { unit: 'day' },
+                    title: { display: true, text: 'Date' }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Number of Submissions' },
+                    ticks: { stepSize: 1, precision: 0 }
+                }
+            }
+        }
+    };
+}
+
+function setupMobileSidebar() {
+    const sidebar = document.getElementById('left-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const btn = document.getElementById('mobile-menu-btn');
+    const close = document.getElementById('close-sidebar-btn');
+
+    btn?.addEventListener('click', () => {
+        sidebar.classList.add('mobile-open');
+        overlay.classList.add('active');
+    });
+    close?.addEventListener('click', () => {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+    });
+    overlay?.addEventListener('click', () => {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+    });
+}
+
+
+</script>
+  <script src="assets/js/shared-sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFLT Phase 2 | GRM Management Log</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --brand-color: #4f46e5;
+            --color-resolved: #10b981;
+            --color-inprogress: #f59e0b;
+            --color-overdue: #ef4444;
+            --color-open: #3b82f6;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow: hidden; /* Prevent body scroll, table will scroll */
+        }
+        
+        #sidebar { transition: transform 0.3s ease-in-out; transform: translateX(-100%); }
+        #sidebar-overlay { transition: opacity 0.3s ease-in-out; }
+        #page-container { transition: margin-left 0.3s ease-in-out; height: 100vh; display: flex; flex-direction: column; }
+        body.sidebar-open #sidebar { transform: translateX(0); }
+        body.sidebar-open #sidebar-overlay { display: block; }
+        @media (min-width: 1024px) { body.sidebar-open #page-container { margin-left: 16rem; } }
+
+        /* Main layout for the log page */
+        .log-container {
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            height: 100%;
+            gap: 1rem;
+        }
+
+        /* Styling for the spreadsheet-like table */
+        .table-wrapper {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            flex-grow: 1;
+            overflow: hidden; /* Hide outer scrollbars */
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .table-scroll-container {
+            flex-grow: 1;
+            overflow: auto; /* This is where the scrolling happens */
+        }
+        .table-scroll-container::-webkit-scrollbar { width: 8px; height: 8px; }
+        .table-scroll-container::-webkit-scrollbar-track { background: #f1f5f9; }
+        .table-scroll-container::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        
+        #grm-log-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #grm-log-table thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f8fafc;
+            border-bottom: 2px solid var(--border-color);
+            z-index: 10;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        #grm-log-table tbody td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+        #grm-log-table tbody tr:hover { background-color: #f1f5f9; }
+
+        /* Status Tag Styles */
+        .status-tag {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            display: inline-block;
+        }
+        
+        /* Checkbox Styles */
+        .resolve-checkbox {
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            accent-color: var(--brand-color);
+        }
+
+        /* Notification Popup */
+        #action-notification {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--text-primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            z-index: 10000;
+        }
+        #action-notification.show {
+            bottom: 1.5rem;
+        }
+
+    </style>
+</head>
+<body class="sidebar-open">
+    <aside id="sidebar" class="fixed top-0 left-0 z-[60] w-64 h-full bg-white shadow-xl">
+        <div class="p-4 border-b"><h2 class="text-xl font-bold text-indigo-600">Dashboard Decks</h2></div>
+        <nav class="p-4">
+                <ul class="space-y-2" id="sidebar-nav">
+                    <li>
+                        <a href="../index.html" class="flex items-center p-2 text-base font-normal rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            <span class="ml-3">DFLT Status Deck</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/Benefeciary_status_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <span class="ml-3">Beneficiary Status</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/DFLT_2_Soft_launch_Map.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                            <span class="ml-3">DFLT Mapping</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/Trainings_Locations_Viewers.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">DFLT Session</span>
+                        </a>
+                    </li>
+
+                    <li class="limited-access">
+                        <a href="../decks/trainers_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            <span class="ml-3">Trainers Progress</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/ic_data_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 ">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                            <span class="ml-3">IC Monitoring Deck</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/GRM Table.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100 bg-indigo-100 text-indigo-700 font-semibold">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="ml-3">GRM Analytics Table</span>
+                        </a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/duration_deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span class="ml-3">Duration Analysis</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/trainer_report.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span class="ml-3">Trainer Report Deck</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT-Target Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                            <span class="ml-3">Target Achievement</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT_Visuals_Deck.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                            <span class="ml-3">DFLT Visuals Deck</span></a>
+                    </li>
+
+                    <li class="full-access">
+                        <a href="../decks/DFLT Pre-Post.html" class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg hover:bg-gray-100">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            <span class="ml-3">DFLT Pre Post</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+    </aside>
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden"></div>
+
+    <div id="page-container">
+        <div class="log-container">
+            <div class="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 flex-shrink-0">
+                <div class="flex items-center gap-4">
+                    <button id="sidebar-toggle" class="p-2 rounded-md text-gray-600 hover:bg-gray-100 focus:outline-none"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+                    <h1 class="text-xl font-extrabold text-gray-900">Grievance Management Log</h1>
+                </div>
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    <input id="searchInput" type="text" placeholder="Search ID, CNIC, Comment..." class="py-1.5 px-3 border border-gray-300 bg-gray-50 rounded-md shadow-sm text-sm w-48">
+                    <select id="statusFilter" class="py-1.5 px-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm text-sm"><option value="All">All Statuses</option></select>
+                    <select id="priorityFilter" class="py-1.5 px-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm text-sm"><option value="All">All Priorities</option></select>
+                    <select id="assignedToFilter" class="py-1.5 px-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm text-sm"><option value="All">All Staff</option></select>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <div class="table-scroll-container">
+                    <table id="grm-log-table">
+                        <thead>
+                            <tr>
+                                <th class="w-16">Resolved</th>
+                                <th>P</th>
+                                <th>Grievance ID</th>
+                                <th>Date Lodged</th>
+                                <th>Complainant (CNIC)</th>
+                                <th>Location</th>
+                                <th>Category</th>
+                                <th class="min-w-[300px]">Details</th>
+                                <th>Assigned To</th>
+                                <th>Status</th>
+                                <th>Due Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="grm-log-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="action-notification"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const sidebarToggle = document.getElementById('sidebar-toggle'), sidebarOverlay = document.getElementById('sidebar-overlay');
+    const toggleSidebar = () => document.body.classList.toggle('sidebar-open');
+    sidebarToggle.addEventListener('click', (e) => { e.stopPropagation(); toggleSidebar(); });
+    sidebarOverlay.addEventListener('click', toggleSidebar);
+
+    // --- HARDCODED DATA (20 Rows, Sindh Only) ---
+    // Helper to ensure dates are treated as Date objects for the table logic
+    // --- HARDCODED DATA (Extracted from Uploaded Sheet) ---
+    // Helper to ensure dates are treated as Date objects
+    const mkDate = (str) => new Date(str);
+
+    let allGrievances = [
+        { id: 'GRM-9001', lodgedDate: mkDate('2026-01-20'), province: 'Sindh', district: 'Hyder Shah', category: 'Service Delivery', priority: 'Routine', status: 'Open', assignedTo: 'Aliza', beneficiaryCNIC: '41303-1112223-1', comment: '4 hours training issue community not agree for 4 hours', dueDate: mkDate('2026-01-27'), isOverdue: true },
+        { id: 'GRM-9002', lodgedDate: mkDate('2026-01-21'), province: 'Sindh', district: 'Hyder Shah', category: 'Logistics', priority: 'Routine', status: 'Resolved', assignedTo: 'Mushique Zohra', beneficiaryCNIC: '41303-2223334-2', comment: 'Benefies are demanding food items', dueDate: mkDate('2026-01-28'), isOverdue: false },
+        { id: 'GRM-9003', lodgedDate: mkDate('2026-01-22'), province: 'Sindh', district: 'Sajawal', category: 'Logistics', priority: 'Routine', status: 'Open', assignedTo: 'Nida Mohsin', beneficiaryCNIC: '41409-3334445-3', comment: 'First location share ke ma venue pr gya to Waha training nh the phr dusri venue pr gya Waha training venue the', dueDate: mkDate('2026-01-29'), isOverdue: true },
+        { id: 'GRM-9004', lodgedDate: mkDate('2026-01-23'), province: 'Sindh', district: 'Shahnawaz', category: 'Logistics', priority: 'Routine', status: 'In Progress', assignedTo: 'Kanwal Mustafa', beneficiaryCNIC: '45402-4445556-4', comment: 'Venue was not suitable for beneficiaries n floor was rough too', dueDate: mkDate('2026-01-30'), isOverdue: true },
+        { id: 'GRM-9005', lodgedDate: mkDate('2026-01-23'), province: 'Sindh', district: 'Shahnawaz', category: 'Misconduct', priority: 'Urgent', status: 'Escalated', assignedTo: 'Kanwal Mustafa', beneficiaryCNIC: '45402-5556667-5', comment: 'I told miss kanwal that this venue is not suitable then again she chosen the same venue for next batch.... Males were not in mood to facilitate me', dueDate: mkDate('2026-01-30'), isOverdue: true },
+        { id: 'GRM-9006', lodgedDate: mkDate('2026-01-24'), province: 'Sindh', district: 'Mehran', category: 'Service Delivery', priority: 'Routine', status: 'Resolved', assignedTo: 'Roshan Bano', beneficiaryCNIC: '41306-6667778-6', comment: 'Yhh [Disrespectful Behavior]', dueDate: mkDate('2026-01-31'), isOverdue: false },
+        { id: 'GRM-9007', lodgedDate: mkDate('2026-01-25'), province: 'Sindh', district: 'Shahnawaz', category: 'Service Delivery', priority: 'Urgent', status: 'Open', assignedTo: 'Amber', beneficiaryCNIC: '45402-7778889-7', comment: 'Jesa k meny pehly bataya k bairrh bakriyon k side me training k. Liye ladies ko bithaya gya Jahan janwaron k faeces wgera tha to mahol kafi smelly🤢 tha......', dueDate: mkDate('2026-02-01'), isOverdue: true },
+        { id: 'GRM-9008', lodgedDate: mkDate('2026-01-25'), province: 'Sindh', district: 'Shahnawaz', category: 'Service Delivery', priority: 'Urgent', status: 'Open', assignedTo: 'Gulnaz Mashori', beneficiaryCNIC: '45402-8889990-8', comment: 'Janwaron k sath side me venue rakha gya Jo k boht badbudaar tha kafi mushkil horhi thi bethny me or ladies ko Sahi message b convey nahi kiya gya...', dueDate: mkDate('2026-02-01'), isOverdue: true },
+        { id: 'GRM-9009', lodgedDate: mkDate('2026-01-26'), province: 'Sindh', district: 'Muzafar Ali', category: 'Misconduct', priority: 'Urgent', status: 'In Progress', assignedTo: 'Iram', beneficiaryCNIC: '45203-9990001-9', comment: 'Do you lack of knowledge.', dueDate: mkDate('2026-02-02'), isOverdue: false },
+        { id: 'GRM-9010', lodgedDate: mkDate('2026-01-26'), province: 'Sindh', district: 'Shahnawaz', category: 'Service Delivery', priority: 'Routine', status: 'Resolved', assignedTo: 'Shaista Jatoi', beneficiaryCNIC: '45402-0001112-0', comment: 'The trainer is new n confused I made her mind but it will take time to adjust after 40 minutes about, trainer got on track...', dueDate: mkDate('2026-02-02'), isOverdue: false },
+        { id: 'GRM-9011', lodgedDate: mkDate('2026-01-27'), province: 'Sindh', district: 'Zohaib', category: 'Service Delivery', priority: 'Routine', status: 'In Progress', assignedTo: 'Nazia Sujawal', beneficiaryCNIC: '41409-1122334-1', comment: 'The trainer still has less information and grip on the learning material,', dueDate: mkDate('2026-02-03'), isOverdue: false },
+        { id: 'GRM-9012', lodgedDate: mkDate('2026-01-28'), province: 'Sindh', district: 'Hyder Shah', category: 'Service Delivery', priority: 'Routine', status: 'Open', assignedTo: 'Nasreen Shah', beneficiaryCNIC: '41303-2233445-2', comment: 'The training started late as per the schedule, and at the time it started, all participants were not present; they were arriving one by one.', dueDate: mkDate('2026-02-04'), isOverdue: false },
+        { id: 'GRM-9013', lodgedDate: mkDate('2026-01-28'), province: 'Sindh', district: 'Sajawal', category: 'Logistics', priority: 'Routine', status: 'Open', assignedTo: 'Kanwal', beneficiaryCNIC: '41409-3344556-3', comment: 'When I arrived at the training venue, there was a lot of noise from children, women, and men, and even the aspc was confused.', dueDate: mkDate('2026-02-04'), isOverdue: false },
+        { id: 'GRM-9014', lodgedDate: mkDate('2026-01-29'), province: 'Sindh', district: 'Waqar', category: 'Service Delivery', priority: 'Routine', status: 'Open', assignedTo: 'Zara Amjad', beneficiaryCNIC: '43203-4455667-4', comment: 'Sir Aslamulkum Men Venu P 12:55 p poncha venu vist kirne kilyee Whan P Trainer nhn available the...', dueDate: mkDate('2026-02-05'), isOverdue: false }
+    ];
+
+    const tableBody = document.getElementById('grm-log-table-body');
+
+    // --- POPULATE FILTERS ---
+    ['status', 'priority', 'assignedTo'].forEach(key => {
+        const select = document.getElementById(`${key}Filter`);
+        const options = [...new Set(allGrievances.map(g => g[key]))];
+        // Special handling for Status filter
+        if (key === 'status') {
+             select.innerHTML = `<option value="All">All Statuses</option>
+                                 <option value="Non-Resolved">Non-Resolved</option>`;
+        }
+        options.forEach(opt => select.add(new Option(opt, opt)));
+    });
+
+    // --- MAIN RENDER FUNCTION ---
+    const renderTable = () => {
+        const searchVal = document.getElementById('searchInput').value.toLowerCase();
+        const statusVal = document.getElementById('statusFilter').value;
+        const priorityVal = document.getElementById('priorityFilter').value;
+        const assignedToVal = document.getElementById('assignedToFilter').value;
+
+        const filteredData = allGrievances.filter(g => 
+            (statusVal === 'All' || (statusVal === 'Non-Resolved' ? g.status !== 'Resolved' : g.status === statusVal)) &&
+            (priorityVal === 'All' || g.priority === priorityVal) &&
+            (assignedToVal === 'All' || g.assignedTo === assignedToVal) &&
+            (g.id.toLowerCase().includes(searchVal) || g.beneficiaryCNIC.includes(searchVal) || g.comment.toLowerCase().includes(searchVal))
+        ).sort((a,b) => a.lodgedDate - b.lodgedDate);
+
+        const statusStyles = {
+            'Resolved': 'bg-green-100 text-green-800', 'In Progress': 'bg-yellow-100 text-yellow-800',
+            'Open': 'bg-blue-100 text-blue-800', 'Escalated': 'bg-purple-100 text-purple-800'
+        };
+
+        tableBody.innerHTML = filteredData.map(g => `
+            <tr data-id="${g.id}" class="${g.isOverdue ? 'bg-red-50' : ''}">
+                <td class="text-center"><input type="checkbox" class="resolve-checkbox" ${g.status === 'Resolved' ? 'checked' : ''}></td>
+                <td>${g.priority === 'Urgent' ? '<span title="Urgent" class="text-red-500 font-bold text-lg">❗️</span>' : ''}</td>
+                <td class="font-semibold text-gray-700">${g.id}</td>
+                <td>${g.lodgedDate.toLocaleDateString('en-CA')}</td>
+                <td>${g.beneficiaryCNIC}</td>
+                <td>${g.province}, ${g.district}</td>
+                <td>${g.category}</td>
+                <td class="text-gray-600 truncate max-w-sm" title="${g.comment}">${g.comment}</td>
+                <td>${g.assignedTo}</td>
+                <td><span class="status-tag ${statusStyles[g.status]}">${g.status}</span></td>
+                <td class="${g.isOverdue ? 'text-red-600 font-bold' : ''}">${g.dueDate.toLocaleDateString('en-CA')}</td>
+            </tr>
+        `).join('');
+    };
+
+    // --- INTERACTIVITY ---
+    tableBody.addEventListener('change', (e) => {
+        if (e.target.classList.contains('resolve-checkbox')) {
+            const row = e.target.closest('tr');
+            const grievanceId = row.dataset.id;
+            const grievance = allGrievances.find(g => g.id === grievanceId);
+            
+            if (grievance) {
+                grievance.status = e.target.checked ? 'Resolved' : 'Open';
+                // Recalculate overdue status on change
+                grievance.isOverdue = grievance.status !== 'Resolved' && new Date() > grievance.dueDate;
+                
+                showActionNotification(`${grievance.id} marked as ${grievance.status}`);
+                renderTable(); // Re-render to reflect the change immediately
+            }
+        }
+    });
+
+    // --- Action Notification ---
+    let notificationTimer;
+    const showActionNotification = (message) => {
+        const notification = document.getElementById('action-notification');
+        notification.textContent = message;
+        notification.classList.add('show');
+        clearTimeout(notificationTimer);
+        notificationTimer = setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    };
+
+    // --- EVENT LISTENERS FOR FILTERS ---
+    ['searchInput', 'statusFilter', 'priorityFilter', 'assignedToFilter'].forEach(id => {
+        document.getElementById(id).addEventListener('input', renderTable);
+    });
+    
+    // Initial Load
+    renderTable();
+});
+</script>
+</body>
+</html>
